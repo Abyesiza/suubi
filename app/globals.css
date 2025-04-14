@@ -1,0 +1,217 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Updated color palette based on #E1AD01 (Mustard Yellow), #73A580 (Green), #3E363F (Dark Purple/Grey) */
+    --background: 108 16% 95%; /* Light version of green */
+    --foreground: 280 8% 24%; /* Dark Purple/Grey for text */
+
+    --card: 0 0% 100%; /* Pure white cards for contrast */
+    --card-foreground: 280 8% 24%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 280 8% 24%;
+
+    /* Primary = Green */
+    --primary: 138 20% 55%; /* #73A580 green as primary color */
+    --primary-foreground: 0 0% 100%; /* White text on green */
+    
+    /* Green variants based on #73A580 */
+    --suubi-green-50: 138 20% 95%;  
+    --suubi-green-100: 138 20% 90%; 
+    --suubi-green-200: 138 20% 85%; 
+    --suubi-green-300: 138 20% 75%; 
+    --suubi-green-400: 138 20% 65%; 
+    --suubi-green-500: 138 20% 55%; /* Main green */
+    --suubi-green-600: 138 20% 45%; 
+    --suubi-green-700: 138 20% 35%; 
+    --suubi-green-800: 138 20% 25%; 
+    --suubi-green-900: 138 20% 15%; 
+
+    /* Secondary = Dark Purple */
+    --secondary: 280 8% 24%; /* #3E363F Dark purple/grey */
+    --secondary-foreground: 0 0% 100%; /* White text on dark background */
+
+    --muted: 280 8% 95%; /* Light version of dark purple/grey */
+    --muted-foreground: 280 8% 45%; /* Medium Dark Purple/Grey */
+
+    /* Accent = Mustard Yellow */
+    --accent: 44 99% 44%; /* #E1AD01 Mustard Yellow */
+    --accent-foreground: 280 8% 24%; /* Dark text on yellow */
+    --suubi-yellow-light: 44 99% 90%;
+    --suubi-yellow-dark: 44 99% 35%;
+
+    --destructive: 0 84% 60%; /* Keep Suubi Red */
+    --destructive-foreground: 0 0% 100%;
+    --suubi-red-light: 0 84% 90%;
+    --suubi-red-dark: 0 84% 50%;
+
+    --border: 138 20% 85%; /* Light green border */
+    --input: 138 20% 85%; /* Light green input borders */
+    --ring: 138 20% 55%; /* Use primary green for rings */
+
+    --radius: 0.5rem;
+
+    /* Chart colors using new palette */
+    --chart-1: 138 20% 55%; /* Green */
+    --chart-2: 44 99% 44%;  /* Yellow */
+    --chart-3: 280 8% 24%;  /* Dark Purple */
+    --chart-4: 138 30% 35%; /* Dark Green */
+    --chart-5: 44 99% 65%;  /* Light Yellow */
+  }
+
+  .dark {
+    /* Dark Mode Colors - using the same scheme but darker versions */
+    --background: 280 8% 15%; /* Dark Purple/Grey background */
+    --foreground: 0 0% 95%;
+
+    --card: 280 8% 20%; /* Slightly lighter dark purple for cards */
+    --card-foreground: 0 0% 95%;
+
+    --popover: 280 8% 20%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 138 20% 50%; /* Green for dark mode */
+    --primary-foreground: 0 0% 100%;
+    
+    /* Dark mode green variants */
+    --suubi-green-50: 138 20% 20%;  
+    --suubi-green-100: 138 20% 25%;
+    --suubi-green-200: 138 20% 30%;
+    --suubi-green-300: 138 20% 35%;
+    --suubi-green-400: 138 20% 40%;
+    --suubi-green-500: 138 20% 50%;
+    --suubi-green-600: 138 20% 60%;
+    --suubi-green-700: 138 20% 70%;
+    --suubi-green-800: 138 20% 80%;
+    --suubi-green-900: 138 20% 90%;
+
+    --secondary: 280 8% 24%; /* Dark purple stays similar */
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 280 8% 25%;
+    --muted-foreground: 280 8% 70%;
+
+    --accent: 44 99% 44%; /* Mustard yellow */
+    --accent-foreground: 280 8% 15%;
+
+    --destructive: 0 72% 51%; /* Keep destructive */
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 280 8% 30%;
+    --input: 280 8% 30%;
+    --ring: 138 20% 50%;
+
+    /* Chart colors for dark mode */
+    --chart-1: 138 20% 60%; /* Green */
+    --chart-2: 44 99% 60%;  /* Yellow */
+    --chart-3: 280 8% 75%;  /* Light Purple/Grey */
+    --chart-4: 138 30% 45%; /* Darker Green */
+    --chart-5: 44 99% 75%;  /* Light Yellow */
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    /* Inter font is applied via className in layout */
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+    /* Poppins font is applied via variable in layout */
+  }
+}
+
+@layer components {
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Global button styles for zoom effect */
+  button, .btn-primary {
+    @apply transition-all duration-300;
+    
+    &:hover {
+      transform: scale(1.05);
+    }
+  }
+
+  .btn-primary {
+    /* Use Tailwind classes referencing the new theme colors */
+    @apply bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium;
+    
+    /* Apply the accent (mustard yellow) color on hover */
+    &:hover {
+      @apply bg-accent text-accent-foreground;
+      transform: scale(1.05);
+    }
+  }
+
+  /* Button outline variant */
+  button[variant="outline"], 
+  .btn-outline,
+  [class*="variant-outline"] {
+    @apply border border-primary text-primary bg-transparent;
+    
+    &:hover {
+      @apply bg-accent text-accent-foreground border-accent;
+      transform: scale(1.05);
+    }
+  }
+
+  .card {
+    /* Use Tailwind classes referencing the new theme colors */
+    @apply bg-card text-card-foreground rounded-2xl shadow-lg p-6;
+  }
+  
+  /* Add some new helpful utility classes */
+  .bg-green-subtle {
+    background-color: hsl(var(--suubi-green-50));
+  }
+  
+  .border-green-light {
+    border-color: hsl(var(--suubi-green-200));
+  }
+  
+  .text-green-dark {
+    color: hsl(var(--suubi-green-800));
+  }
+
+  /* Add direct utility classes for our specific colors */
+  .bg-mustard {
+    background-color: #E1AD01;
+  }
+
+  .bg-suubi-green {
+    background-color: #73A580;
+  }
+
+  .bg-dark-purple {
+    background-color: #3E363F;
+  }
+
+  .text-mustard {
+    color: #E1AD01;
+  }
+
+  .text-suubi-green {
+    color: #73A580;
+  }
+
+  .text-dark-purple {
+    color: #3E363F;
+  }
+}
+
+/* Remove old specific color vars */
+/* 
+:root {
+  --primary-50: ... 
+  ...
+  --accent-green-500: ...
+  --accent-orange-500: ...
+}
+*/
