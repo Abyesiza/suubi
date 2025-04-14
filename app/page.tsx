@@ -12,10 +12,6 @@ import { useState, useEffect } from 'react';
 // Hero slider images
 const heroImages = [
   {
-    url: 'https://images.unsplash.com/photo-1631217868264-e6f75cc0d349?q=80&w=1168',
-    alt: 'Modern Healthcare Setting'
-  },
-  {
     url: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=1168',
     alt: 'Dr. Sarah Johnson, Cardiologist'
   },
