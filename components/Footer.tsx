@@ -56,10 +56,13 @@ export default function Footer() {
           <motion.div variants={itemVariants}>
             <h3 className="text-lg font-semibold mb-6">Quick Links</h3>
             <ul className="space-y-3">
-              <FooterLink href="/doctors" text="Find a Doctor" />
-              <FooterLink href="/appointments" text="Book Appointment" />
-              <FooterLink href="/health-assessment" text="Health Assessment" />
-              <FooterLink href="/chat" text="Chat with Doctor" />
+              <FooterLink href="/" text="Home" />
+              <FooterLink href="/services" text="Services" />
+              <FooterLink href="/doctors" text="Our Doctors" />
+              <FooterLink href="/appointments" text="Appointments" />
+              <FooterLink href="/about" text="About Us" />
+              <FooterLink href="/donate" text="Donate" />
+              <FooterLink href="/contact" text="Contact" />
             </ul>
           </motion.div>
 

@@ -226,7 +226,118 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Testimonials Section - Updated colors */}
+      {/* Health Check Section - Updated colors */}
+      <section className="bg-[#73A580]/20 py-20">
+        <div className="container-custom">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <h2 className="text-3xl font-bold mb-4 text-dark-purple">How are you feeling today?</h2>
+            <p className="text-dark-purple/80">
+              Take our quick health assessment to get personalized recommendations
+            </p>
+          </div>
+          <Card className="max-w-3xl mx-auto p-8 border-[#73A580]">
+            <div className="grid gap-6">
+              <div className="flex flex-wrap gap-4 justify-center">
+                <Button variant="outline" className="text-lg px-6 border-suubi-green text-dark-purple hover:bg-mustard hover:border-mustard">😊 Great</Button>
+                <Button variant="outline" className="text-lg px-6 border-suubi-green text-dark-purple hover:bg-mustard hover:border-mustard">😐 Okay</Button>
+                <Button variant="outline" className="text-lg px-6 border-suubi-green text-dark-purple hover:bg-mustard hover:border-mustard">😔 Not Well</Button>
+                <Button variant="outline" className="text-lg px-6 border-suubi-green text-dark-purple hover:bg-mustard hover:border-mustard">🤒 Sick</Button>
+              </div>
+              <div className="text-center">
+                <Link href="/health-assessment">
+                  <Button className="bg-mustard hover:bg-suubi-green text-dark-purple hover:text-white transition-colors">Get Health Recommendations</Button>
+                </Link>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </section>
+
+      {/* Donation Section */}
+      <section className="py-20 bg-mustard/10">
+        <div className="container-custom">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <h2 className="text-3xl font-bold mb-4 text-dark-purple">Be a Healthcare Hero</h2>
+            <div className="w-40 h-6 mx-auto mb-4">
+              <Lifeline color="#E1AD01" height="12px" variant="minimal" />
+            </div>
+            <p className="text-dark-purple/80">
+              Your generosity can save lives. Every donation helps provide essential medical care to those who need it most.
+            </p>
+          </div>
+          <div className="bg-white rounded-xl shadow-lg p-8 max-w-4xl mx-auto">
+            <div className="flex flex-col md:flex-row items-center gap-8">
+              <div className="flex-1">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
+                  viewport={{ once: true }}
+                  className="space-y-4"
+                >
+                  <h3 className="text-xl font-semibold text-dark-purple">Making a Difference Together</h3>
+                  <p className="text-dark-purple/80">
+                    Your support helps us provide medical care to underserved communities and individuals who cannot afford healthcare services.
+                  </p>
+                  <div className="flex gap-4 flex-wrap">
+                    <Link href="/donate">
+                      <Button className="bg-suubi-green hover:bg-suubi-green/80 text-white transition-colors">Donate Now</Button>
+                    </Link>
+                    <Link href="/register-patient">
+                      <Button variant="outline" className="border-suubi-green text-suubi-green hover:bg-suubi-green hover:text-white">Register Someone</Button>
+                    </Link>
+                  </div>
+                </motion.div>
+              </div>
+              <div className="flex-1 w-full md:w-auto">
+                <div className="relative h-48 md:h-64 rounded-lg overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-mustard/40 to-transparent z-10"></div>
+                  <img 
+                    src="https://images.unsplash.com/photo-1515377905703-c4788e51af15?q=80&w=1170" 
+                    alt="Medical volunteer helping a patient" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section - Updated colors */}
+      <section className="py-20">
+        <div className="container-custom">
+          <div className="bg-dark-purple rounded-2xl p-10 text-center relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-full h-10 transform rotate-180">
+              <Lifeline color="#E1AD01" height="20px" variant="thin" className="opacity-40" />
+            </div>
+            
+            <div className="max-w-2xl mx-auto relative z-10">
+              <h2 className="text-3xl font-bold mb-4 text-white">Ready to take control of your health?</h2>
+              <p className="text-white/80 mb-8">
+                Join the Suubi family today and experience healthcare reimagined. Our team of experts is ready to guide you on your wellness journey.
+              </p>
+              <div className="flex flex-wrap gap-4 justify-center">
+                <Link href="/register">
+                  <Button className="bg-mustard hover:bg-[#F7CA3E] text-dark-purple font-bold transition-colors">Join Suubi Today</Button>
+                </Link>
+                <Link href="/services">
+                  <Button variant="outline" className="border-white bg-white/10 text-white hover:bg-white hover:text-dark-purple">View Our Services</Button>
+                </Link>
+                <Link href="/contact">
+                  <Button variant="outline" className="border-white bg-white/10 text-white hover:bg-white hover:text-dark-purple">Contact Us</Button>
+                </Link>
+              </div>
+            </div>
+            
+            <div className="absolute bottom-0 left-0 w-full h-10">
+              <Lifeline color="#E1AD01" height="20px" variant="thin" className="opacity-40" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials - What Our Patients Say */}
       <section className="py-20 bg-[#3E363F]/5">
         <div className="container-custom">
           <div className="mb-12 text-center">
@@ -258,66 +369,6 @@ export default function Home() {
               title="Patient since 2023"
               rating={5}
             />
-          </div>
-        </div>
-      </section>
-
-      {/* Health Check Section - Updated colors */}
-      <section className="bg-[#73A580]/20 py-20">
-        <div className="container-custom">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-3xl font-bold mb-4 text-dark-purple">How are you feeling today?</h2>
-            <p className="text-dark-purple/80">
-              Take our quick health assessment to get personalized recommendations
-            </p>
-          </div>
-          <Card className="max-w-3xl mx-auto p-8 border-[#73A580]">
-            <div className="grid gap-6">
-              <div className="flex flex-wrap gap-4 justify-center">
-                <Button variant="outline" className="text-lg px-6 border-suubi-green text-dark-purple hover:bg-mustard hover:border-mustard">😊 Great</Button>
-                <Button variant="outline" className="text-lg px-6 border-suubi-green text-dark-purple hover:bg-mustard hover:border-mustard">😐 Okay</Button>
-                <Button variant="outline" className="text-lg px-6 border-suubi-green text-dark-purple hover:bg-mustard hover:border-mustard">😔 Not Well</Button>
-                <Button variant="outline" className="text-lg px-6 border-suubi-green text-dark-purple hover:bg-mustard hover:border-mustard">🤒 Sick</Button>
-              </div>
-              <div className="text-center">
-                <Link href="/health-assessment">
-                  <Button className="bg-mustard hover:bg-suubi-green text-dark-purple hover:text-white transition-colors">Get Health Recommendations</Button>
-                </Link>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </section>
-
-      {/* CTA Section - Updated colors */}
-      <section className="py-20">
-        <div className="container-custom">
-          <div className="bg-dark-purple rounded-2xl p-10 text-center relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-full h-10 transform rotate-180">
-              <Lifeline color="#E1AD01" height="20px" variant="thin" className="opacity-40" />
-            </div>
-            
-            <div className="max-w-2xl mx-auto relative z-10">
-              <h2 className="text-3xl font-bold mb-4 text-white">Ready to take control of your health?</h2>
-              <p className="text-white/80 mb-8">
-                Join the Suubi family today and experience healthcare reimagined. Our team of experts is ready to guide you on your wellness journey.
-              </p>
-              <div className="flex flex-wrap gap-4 justify-center">
-                <Link href="/register">
-                  <Button className="bg-mustard hover:bg-suubi-green text-dark-purple hover:text-white transition-colors">Join Suubi Today</Button>
-                </Link>
-                <Link href="/services">
-                  <Button variant="outline" className="border-white text-white hover:bg-mustard hover:text-dark-purple">View Our Services</Button>
-                </Link>
-                <Link href="/contact">
-                  <Button variant="outline" className="border-white text-white hover:bg-mustard hover:text-dark-purple">Contact Us</Button>
-                </Link>
-              </div>
-            </div>
-            
-            <div className="absolute bottom-0 left-0 w-full h-10">
-              <Lifeline color="#E1AD01" height="20px" variant="thin" className="opacity-40" />
-            </div>
           </div>
         </div>
       </section>

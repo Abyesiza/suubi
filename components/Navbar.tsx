@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X, Heart, Calendar, User, Home, Layers } from 'lucide-react';
+import { Menu, X, Heart, Calendar, User, Home, Layers, Info, DollarSign } from 'lucide-react';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -62,6 +62,16 @@ export default function Navbar() {
                 text="Appointments"
                 scrolled={scrolled}
               />
+              <NavLink href="/about" 
+                icon={<Info className="w-5 h-5" />} 
+                text="About"
+                scrolled={scrolled}
+              />
+              <NavLink href="/donate" 
+                icon={<DollarSign className="w-5 h-5" />} 
+                text="Donate"
+                scrolled={scrolled}
+              />
               <Link href="/contact">
                 <button className="bg-mustard hover:bg-suubi-green text-dark-purple hover:text-white transition-colors px-5 py-2 rounded-full">
                   Connect With Us
@@ -91,6 +101,8 @@ export default function Navbar() {
             <MobileNavLink href="/services" text="Services" />
             <MobileNavLink href="/doctors" text="Doctors" />
             <MobileNavLink href="/appointments" text="Appointments" />
+            <MobileNavLink href="/about" text="About" />
+            <MobileNavLink href="/donate" text="Donate" />
             <Link href="/contact">
               <button className="bg-mustard hover:bg-suubi-green text-dark-purple hover:text-white transition-colors w-full text-center py-2 rounded-lg">Connect With Us</button>
             </Link>
