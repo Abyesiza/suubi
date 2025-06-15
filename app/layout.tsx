@@ -15,7 +15,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: 'Suubi Healthcare - Your Wellness Partner',
+  title: 'Suubi Medical Centre - Your Wellness Partner',
   description: 'Modern healthcare solutions for your well-being',
 };
 

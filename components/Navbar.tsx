@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Menu, X, Heart, Calendar, User, Home, Layers, Info, DollarSign } from 'lucide-react';
 
 export default function Navbar() {
@@ -36,8 +37,8 @@ export default function Navbar() {
         <div className="container mx-auto px-6">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center space-x-2">
-              <Heart className="h-8 w-8 text-mustard" />
-              <span className="text-xl font-bold text-dark-purple">Suubi Healthcare</span>
+              <Image src="/DR SUUBI final/SUUBI LOGO ICON PNG trans no words.png" alt="Suubi Logo" width={40} height={40} className="h-8 w-8 object-contain" />
+              <span className="text-xl font-bold text-dark-purple">Suubi Medical Centre</span>
             </Link>
 
             {/* Desktop Navigation */}

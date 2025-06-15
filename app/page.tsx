@@ -12,20 +12,20 @@ import { useState, useEffect } from 'react';
 // Hero slider images
 const heroImages = [
   {
-    url: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=1168',
-    alt: 'Dr. Sarah Johnson, Cardiologist'
+    url: '/img/dr1.jpg',
+    alt: 'Doctor 1'
   },
   {
-    url: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1168',
-    alt: 'Dr. Michael Chen, Pediatrician'
+    url: '/img/dr2.jpg',
+    alt: 'Doctor 2'
   },
   {
-    url: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?q=80&w=1168',
-    alt: 'Dr. Emily Rodriguez, Neurologist'
+    url: '/img/dr3.jpg',
+    alt: 'Doctor 3'
   },
   {
-    url: 'https://images.unsplash.com/photo-1612531386530-97286d97c2d2?q=80&w=1168',
-    alt: 'Dr. James Wilson, Dermatologist'
+    url: '/img/dr4.jpg',
+    alt: 'Doctor 4'
   }
 ];
 
