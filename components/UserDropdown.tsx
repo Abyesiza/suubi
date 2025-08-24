@@ -43,7 +43,7 @@ export default function UserDropdown() {
         {/* Add extra items as needed, e.g., Profile/Settings */}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <SignOutButton afterSignOutUrl="/">
+          <SignOutButton>
             <button className="w-full flex items-center gap-2 text-left">
               <LogOut className="w-4 h-4" />
               Sign out
