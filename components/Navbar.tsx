@@ -3,84 +3,121 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Menu, X, Heart, Calendar, User, Home, Layers, Info, DollarSign } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Menu, X, Phone, MapPin } from 'lucide-react';
+import { SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import UserDropdown from '@/components/UserDropdown';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const router = useRouter();
 
-  // Add scroll event listener to detect when to change navbar style
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 50) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
+      setScrolled(window.scrollY > 50);
     };
-
     window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-4">
-      <nav 
-        className={`w-full max-w-6xl rounded-full transition-all duration-300 ${
-          scrolled 
-            ? 'bg-white/80 backdrop-blur-sm shadow-lg py-1' 
-            : 'bg-white/30 backdrop-blur-sm py-2'
-        }`}
-      >
-        <div className="container mx-auto px-6">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center space-x-2">
-              <Image src="/DR SUUBI final/SUUBI LOGO ICON PNG trans no words.png" alt="Suubi Logo" width={40} height={40} className="h-8 w-8 object-contain" />
-              <span className="text-xl font-bold text-dark-purple">Suubi Medical Centre</span>
+    <div className="fixed top-0 left-0 right-0 z-50">
+      {/* Top Banner - Contact Info & Emergency */}
+      <div className="bg-dark-purple text-white px-4 py-2">
+        <div className="max-w-6xl mx-auto">
+          {/* Desktop Layout */}
+          <div className="hidden md:flex justify-between items-center text-sm">
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2">
+                <Phone className="h-4 w-4" />
+                <span>+256 123 456 789</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <MapPin className="h-4 w-4" />
+                <span>Kampala, Uganda</span>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span>Emergency:</span>
+              <span className="font-semibold">+256 987 654 321</span>
+            </div>
+          </div>
+          
+          {/* Mobile Layout */}
+          <div className="md:hidden space-y-2 text-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Phone className="h-4 w-4" />
+                <span>+256 123 456 789</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <MapPin className="h-4 w-4" />
+                <span>Kampala, Uganda</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-center space-x-2">
+              <span>Emergency:</span>
+              <span className="font-semibold">+256 987 654 321</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Navigation Bar */}
+      <div className="bg-white shadow-sm">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex justify-between items-center h-20">
+            {/* Logo and Brand */}
+            <Link href="/" className="flex items-center space-x-3">
+              <Image src="/logo.png" alt="Suubi Medical Centre" width={60} height={60} />
+
+              <div className="flex flex-col">
+                <span className="text-xl md:text-2xl font-bold text-dark-purple">Suubi Medical Centre</span>
+                <span className="text-xs md:text-sm text-suubi-green">Caring for Your Health</span>
+              </div>
             </Link>
 
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-6">
-              <NavLink href="/" 
-                icon={<Home className="w-5 h-5" />} 
-                text="Home"
-                scrolled={scrolled}
-              />
-              <NavLink href="/services" 
-                icon={<Layers className="w-5 h-5" />} 
-                text="Services"
-                scrolled={scrolled}
-              />
-              <NavLink href="/doctors" 
-                icon={<User className="w-5 h-5" />} 
-                text="Doctors"
-                scrolled={scrolled}
-              />
-              <NavLink href="/appointments" 
-                icon={<Calendar className="w-5 h-5" />} 
-                text="Appointments"
-                scrolled={scrolled}
-              />
-              <NavLink href="/about" 
-                icon={<Info className="w-5 h-5" />} 
-                text="About"
-                scrolled={scrolled}
-              />
-              <NavLink href="/donate" 
-                icon={<DollarSign className="w-5 h-5" />} 
-                text="Donate"
-                scrolled={scrolled}
-              />
-              <Link href="/contact">
-                <button className="bg-mustard hover:bg-suubi-green text-dark-purple hover:text-white transition-colors px-5 py-2 rounded-full">
-                  Connect With Us
-                </button>
+            {/* Desktop Navigation Links */}
+            <div className="hidden md:flex items-center space-x-8">
+              <Link href="/" className="text-dark-purple hover:text-suubi-green transition-colors font-medium">
+                Home
+              </Link>
+              <Link href="/services" className="text-dark-purple hover:text-suubi-green transition-colors font-medium">
+                Services
+              </Link>
+              <Link href="/about" className="text-dark-purple hover:text-suubi-green transition-colors font-medium">
+                About
+              </Link>
+              <Link href="/doctors" className="text-dark-purple hover:text-suubi-green transition-colors font-medium">
+                Doctors
+              </Link>
+              <Link href="/contact" className="text-dark-purple hover:text-suubi-green transition-colors font-medium">
+                Contact
               </Link>
             </div>
 
-            {/* Mobile Navigation Button */}
+            {/* Right Side - Book Appointment Button & Auth */}
+            <div className="hidden md:flex items-center space-x-4">
+              <Link href="/appointments">
+                <button className="bg-mustard text-white hover:bg-orange-600 transition-colors px-6 py-3 rounded-lg font-medium">
+                  Book Appointment
+                </button>
+              </Link>
+              
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <button className="text-dark-purple hover:text-suubi-green transition-colors font-medium">
+                    Sign in
+                  </button>
+                </SignInButton>
+              </SignedOut>
+              <SignedIn>
+                <UserDropdown />
+              </SignedIn>
+            </div>
+
+            {/* Mobile Menu Button */}
             <button 
               className="md:hidden" 
               onClick={() => setIsOpen(!isOpen)}
@@ -92,44 +129,51 @@ export default function Navbar() {
             </button>
           </div>
         </div>
-      </nav>
+      </div>
       
-      {/* Mobile Navigation Menu - Positioned below the navbar */}
+      {/* Mobile Navigation Menu */}
       {isOpen && (
-        <div className="absolute top-24 left-0 right-0 md:hidden flex justify-center px-4">
-          <div className="w-full max-w-6xl bg-white rounded-xl shadow-lg p-4 flex flex-col space-y-4">
-            <MobileNavLink href="/" text="Home" />
-            <MobileNavLink href="/services" text="Services" />
-            <MobileNavLink href="/doctors" text="Doctors" />
-            <MobileNavLink href="/appointments" text="Appointments" />
-            <MobileNavLink href="/about" text="About" />
-            <MobileNavLink href="/donate" text="Donate" />
-            <Link href="/contact">
-              <button className="bg-mustard hover:bg-suubi-green text-dark-purple hover:text-white transition-colors w-full text-center py-2 rounded-lg">Connect With Us</button>
+        <div className="md:hidden bg-white border-t border-gray-200 shadow-lg">
+          <div className="px-4 py-6 space-y-4">
+            <Link href="/" className="block py-2 text-dark-purple hover:text-suubi-green transition-colors font-medium">
+              Home
             </Link>
+            <Link href="/services" className="block py-2 text-dark-purple hover:text-suubi-green transition-colors font-medium">
+              Services
+            </Link>
+            <Link href="/about" className="block py-2 text-dark-purple hover:text-suubi-green transition-colors font-medium">
+              About
+            </Link>
+            <Link href="/doctors" className="block py-2 text-dark-purple hover:text-suubi-green transition-colors font-medium">
+              Doctors
+            </Link>
+            <Link href="/contact" className="block py-2 text-dark-purple hover:text-suubi-green transition-colors font-medium">
+              Contact
+            </Link>
+            
+            <div className="pt-4 border-t border-gray-200">
+              <Link href="/appointments">
+                <button className="w-full bg-mustard text-white hover:bg-orange-600 transition-colors py-3 rounded-lg font-medium mb-4">
+                  Book Appointment
+                </button>
+              </Link>
+              
+              <div className="space-y-2">
+                <SignedOut>
+                  <SignInButton mode="modal">
+                    <button className="w-full text-dark-purple hover:text-suubi-green transition-colors font-medium py-2">
+                      Sign in
+                    </button>
+                  </SignInButton>
+                </SignedOut>
+                <SignedIn>
+                  <UserDropdown />
+                </SignedIn>
+              </div>
+            </div>
           </div>
         </div>
       )}
     </div>
-  );
-}
-
-function NavLink({ href, icon, text, scrolled }: { href: string; icon: React.ReactNode; text: string; scrolled: boolean }) {
-  return (
-    <Link 
-      href={href} 
-      className="flex items-center space-x-1 text-dark-purple hover:text-mustard transition-colors"
-    >
-      {icon}
-      <span>{text}</span>
-    </Link>
-  );
-}
-
-function MobileNavLink({ href, text }: { href: string; text: string }) {
-  return (
-    <Link href={href} className="block px-4 py-2 text-dark-purple hover:text-mustard">
-      {text}
-    </Link>
   );
 }

@@ -86,7 +86,7 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-[#F5F7F9] to-white pt-24 pb-16">
+      <section className="relative bg-gradient-to-b from-[#F5F7F9] to-white pt-24 pb-8 md:pb-12">
         <div className="absolute top-0 left-0 right-0 h-8">
           <Lifeline color="#E1AD01" height="12px" variant="thin" className="opacity-30" />
         </div>
@@ -96,17 +96,17 @@ export default function AboutPage() {
             initial="hidden"
             animate="visible"
             variants={staggerChildren}
-            className="grid md:grid-cols-2 gap-12 items-center"
+            className="grid md:grid-cols-2 gap-8 md:gap-12 items-center"
           >
             <motion.div variants={fadeIn} className="max-w-xl">
               <h1 className="text-4xl font-bold mb-4 text-dark-purple">About Suubi Healthcare</h1>
-              <div className="w-32 h-6 mb-6">
+              <div className="w-32 h-6 mb-4 md:mb-6">
                 <Lifeline color="#E1AD01" height="12px" variant="minimal" />
               </div>
-              <p className="text-dark-purple/80 mb-6">
+              <p className="text-dark-purple/80 mb-4 md:mb-6">
                 Suubi Healthcare is an initiative of the Boost Health Initiative (BHI), a non-profit organization dedicated to improving healthcare access and outcomes for marginalized communities in Uganda, with a special focus on women and children.
               </p>
-              <p className="text-dark-purple/80 mb-8">
+              <p className="text-dark-purple/80 mb-6 md:mb-8">
                 By combining medical expertise, community engagement, and sustainable development practices, we strive to create lasting positive change in the health landscape of underserved populations.
               </p>
               <div className="flex flex-wrap gap-4">
@@ -146,32 +146,32 @@ export default function AboutPage() {
       </section>
       
       {/* Mission and Vision */}
-      <section className="py-16 bg-white">
+      <section className="py-8 md:py-12 lg:py-16 bg-white">
         <div className="container-custom">
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="text-center mb-12"
+            className="text-center mb-6 md:mb-8 lg:mb-12"
           >
             <h2 className="text-3xl font-bold mb-2 text-dark-purple">Our Vision & Mission</h2>
-            <div className="w-32 h-1 bg-mustard mx-auto mb-6 rounded-full"></div>
+            <div className="w-32 h-1 bg-mustard mx-auto mb-4 md:mb-6 rounded-full"></div>
           </motion.div>
           
-          <div className="grid md:grid-cols-2 gap-12">
+          <div className="grid md:grid-cols-2 gap-8 md:gap-12">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="bg-[#73A580]/5 p-8 rounded-lg border border-[#73A580]/20 relative overflow-hidden"
+              className="bg-[#73A580]/5 p-6 md:p-8 rounded-lg border border-[#73A580]/20 relative overflow-hidden"
             >
               <div className="absolute top-0 left-0 w-full h-1 overflow-hidden">
                 <Lifeline color="#E1AD01" height="4px" variant="thin" className="opacity-50" />
               </div>
-              <h3 className="text-2xl font-bold mb-4 text-dark-purple">Our Vision</h3>
-              <p className="text-dark-purple/80 mb-6">
+              <h3 className="text-2xl font-bold mb-3 md:mb-4 text-dark-purple">Our Vision</h3>
+              <p className="text-dark-purple/80 mb-4 md:mb-6">
                 To create communities where every individual, regardless of their socioeconomic status, has access to quality healthcare, equal opportunities, and the resources they need to lead a healthy and dignified life.
               </p>
               <p className="text-dark-purple/80">
@@ -184,13 +184,13 @@ export default function AboutPage() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="bg-[#73A580]/5 p-8 rounded-lg border border-[#73A580]/20 relative overflow-hidden"
+              className="bg-[#73A580]/5 p-6 md:p-8 rounded-lg border border-[#73A580]/20 relative overflow-hidden"
             >
               <div className="absolute top-0 left-0 w-full h-1 overflow-hidden">
                 <Lifeline color="#E1AD01" height="4px" variant="thin" className="opacity-50" />
               </div>
-              <h3 className="text-2xl font-bold mb-4 text-dark-purple">Our Mission</h3>
-              <p className="text-dark-purple/80 mb-6">
+              <h3 className="text-2xl font-bold mb-3 md:mb-4 text-dark-purple">Our Mission</h3>
+              <p className="text-dark-purple/80 mb-4 md:mb-6">
                 To implement sustainable health initiatives, educational programs, and economic empowerment projects that address the unique challenges faced by marginalized communities, with a special focus on women and children in Uganda.
               </p>
               <p className="text-dark-purple/80">
@@ -202,20 +202,20 @@ export default function AboutPage() {
       </section>
       
       {/* Our Story */}
-      <section className="py-16 bg-[#F5F7F9]">
+      <section className="py-8 md:py-12 lg:py-16 bg-[#F5F7F9]">
         <div className="container-custom">
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="text-center mb-12"
+            className="text-center mb-6 md:mb-8 lg:mb-12"
           >
             <h2 className="text-3xl font-bold mb-2 text-dark-purple">Our Story</h2>
-            <div className="w-32 h-1 bg-mustard mx-auto mb-6 rounded-full"></div>
+            <div className="w-32 h-1 bg-mustard mx-auto mb-4 md:mb-6 rounded-full"></div>
           </motion.div>
           
-          <div className="grid md:grid-cols-12 gap-8">
+          <div className="grid md:grid-cols-12 gap-6 md:gap-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -223,7 +223,7 @@ export default function AboutPage() {
               transition={{ duration: 0.5 }}
               className="md:col-span-7 order-2 md:order-1"
             >
-              <div className="space-y-6 text-dark-purple/80">
+              <div className="space-y-4 md:space-y-6 text-dark-purple/80">
                 <p>
                   Boost Health Initiative (BHI) was founded in 2015 by a team of Ugandan healthcare professionals and community leaders who witnessed firsthand the devastating impact of healthcare inequality in rural and urban underserved areas.
                 </p>
@@ -269,23 +269,23 @@ export default function AboutPage() {
       </section>
       
       {/* Operational Categories */}
-      <section className="py-16 bg-white">
+      <section className="py-8 md:py-12 lg:py-16 bg-white">
         <div className="container-custom">
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="text-center mb-12"
+            className="text-center mb-6 md:mb-8 lg:mb-12"
           >
             <h2 className="text-3xl font-bold mb-2 text-dark-purple">Operational Categories</h2>
-            <div className="w-32 h-1 bg-mustard mx-auto mb-6 rounded-full"></div>
+            <div className="w-32 h-1 bg-mustard mx-auto mb-4 md:mb-6 rounded-full"></div>
             <p className="text-dark-purple/80 max-w-3xl mx-auto">
               BHI's work is organized into three core operational categories that guide our approach to addressing community needs:
             </p>
           </motion.div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-6 md:gap-8">
             {operationalCategories.map((category, index) => (
               <motion.div
                 key={index}
@@ -294,11 +294,11 @@ export default function AboutPage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <Card className="p-8 h-full border-[#73A580]/30 flex flex-col">
-                  <div className="bg-[#73A580]/10 p-4 rounded-full w-16 h-16 flex items-center justify-center mb-4">
+                <Card className="p-6 md:p-8 h-full border-[#73A580]/30 flex flex-col">
+                  <div className="bg-[#73A580]/10 p-4 rounded-full w-16 h-16 flex items-center justify-center mb-3 md:mb-4">
                     {category.icon}
                   </div>
-                  <h3 className="text-xl font-bold mb-3 text-dark-purple">{category.title}</h3>
+                  <h3 className="text-xl font-bold mb-2 md:mb-3 text-dark-purple">{category.title}</h3>
                   <p className="text-dark-purple/80">{category.description}</p>
                 </Card>
               </motion.div>
@@ -308,23 +308,23 @@ export default function AboutPage() {
       </section>
       
       {/* Core Program Areas */}
-      <section className="py-16 bg-[#F5F7F9]">
+      <section className="py-8 md:py-12 lg:py-16 bg-[#F5F7F9]">
         <div className="container-custom">
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="text-center mb-12"
+            className="text-center mb-6 md:mb-8 lg:mb-12"
           >
             <h2 className="text-3xl font-bold mb-2 text-dark-purple">Core Program Areas</h2>
-            <div className="w-32 h-1 bg-mustard mx-auto mb-6 rounded-full"></div>
+            <div className="w-32 h-1 bg-mustard mx-auto mb-4 md:mb-6 rounded-full"></div>
             <p className="text-dark-purple/80 max-w-3xl mx-auto">
               Our initiatives span across seven key program areas, allowing us to address the diverse needs of the communities we serve:
             </p>
           </motion.div>
           
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-4 md:gap-6">
             {corePrograms.map((program, index) => (
               <motion.div
                 key={index}
@@ -332,9 +332,9 @@ export default function AboutPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.1 * (index % 3) }}
-                className="bg-white rounded-lg p-6 shadow-sm border border-[#73A580]/20"
+                className="bg-white rounded-lg p-4 md:p-6 shadow-sm border border-[#73A580]/20"
               >
-                <div className="flex gap-4">
+                <div className="flex gap-3 md:gap-4">
                   <div className="bg-[#73A580]/10 p-3 rounded-full h-12 w-12 flex items-center justify-center shrink-0">
                     {program.icon}
                   </div>
@@ -350,7 +350,7 @@ export default function AboutPage() {
       </section>
       
       {/* Call to Action */}
-      <section className="py-16 bg-dark-purple text-white">
+      <section className="py-8 md:py-12 lg:py-16 bg-dark-purple text-white">
         <div className="container-custom">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -359,8 +359,8 @@ export default function AboutPage() {
             transition={{ duration: 0.5 }}
             className="max-w-3xl mx-auto text-center"
           >
-            <h2 className="text-3xl font-bold mb-6">Join Us in Making a Difference</h2>
-            <p className="mb-8 text-white/80">
+            <h2 className="text-3xl font-bold mb-4 md:mb-6">Join Us in Making a Difference</h2>
+            <p className="mb-6 md:mb-8 text-white/80">
               Your support enables us to continue our vital work in communities across Uganda. Whether through donations, 
               volunteering, or spreading awareness, every contribution makes a meaningful impact in the lives of those 
               who need it most.

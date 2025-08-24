@@ -4,9 +4,10 @@
 
 @layer base {
   :root {
-    /* Updated color palette based on #E1AD01 (Mustard Yellow), #73A580 (Green), #3E363F (Dark Purple/Grey) */
-    --background: 108 16% 95%; /* Light version of green */
-    --foreground: 280 8% 24%; /* Dark Purple/Grey for text */
+    /* Updated palette aligned to logo: Dark Blue, Green, Orange */
+    /* Primary surface/text tokens */
+    --background: 210 40% 98%; /* Light Gray #F5F7FA */
+    --foreground: 210 13% 35%; /* Cool Gray #A3AAB2 for default text */
 
     --card: 0 0% 100%; /* Pure white cards for contrast */
     --card-foreground: 280 8% 24%;
@@ -14,102 +15,102 @@
     --popover: 0 0% 100%;
     --popover-foreground: 280 8% 24%;
 
-    /* Primary = Green */
-    --primary: 138 20% 55%; /* #73A580 green as primary color */
-    --primary-foreground: 0 0% 100%; /* White text on green */
+    /* Primary = Dark Blue (trust) */
+    --primary: 214 52% 25%; /* #1E3A5F */
+    --primary-foreground: 0 0% 100%;
     
-    /* Green variants based on #73A580 */
-    --suubi-green-50: 138 20% 95%;  
-    --suubi-green-100: 138 20% 90%; 
-    --suubi-green-200: 138 20% 85%; 
-    --suubi-green-300: 138 20% 75%; 
-    --suubi-green-400: 138 20% 65%; 
-    --suubi-green-500: 138 20% 55%; /* Main green */
-    --suubi-green-600: 138 20% 45%; 
-    --suubi-green-700: 138 20% 35%; 
-    --suubi-green-800: 138 20% 25%; 
-    --suubi-green-900: 138 20% 15%; 
+    /* Green scale based on #2E8B57 */
+    --suubi-green-50: 152 28% 95%;  
+    --suubi-green-100: 152 28% 90%; 
+    --suubi-green-200: 152 28% 82%; 
+    --suubi-green-300: 152 28% 70%; 
+    --suubi-green-400: 152 28% 56%; 
+    --suubi-green-500: 152 50% 37%; /* #2E8B57 */
+    --suubi-green-600: 152 50% 32%; 
+    --suubi-green-700: 152 50% 26%; 
+    --suubi-green-800: 152 50% 20%; 
+    --suubi-green-900: 152 50% 14%; 
 
-    /* Secondary = Dark Purple */
-    --secondary: 280 8% 24%; /* #3E363F Dark purple/grey */
-    --secondary-foreground: 0 0% 100%; /* White text on dark background */
+    /* Secondary = Green for supporting accents */
+    --secondary: 152 50% 37%; /* #2E8B57 */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 280 8% 95%; /* Light version of dark purple/grey */
-    --muted-foreground: 280 8% 45%; /* Medium Dark Purple/Grey */
+    --muted: 210 40% 98%; /* Light Gray background */
+    --muted-foreground: 210 13% 50%; /* Cool gray text */
 
-    /* Accent = Mustard Yellow */
-    --accent: 44 99% 44%; /* #E1AD01 Mustard Yellow */
-    --accent-foreground: 280 8% 24%; /* Dark text on yellow */
-    --suubi-yellow-light: 44 99% 90%;
-    --suubi-yellow-dark: 44 99% 35%;
+    /* Accent = Orange */
+    --accent: 32 92% 55%; /* #F7941D */
+    --accent-foreground: 0 0% 100%;
+    --suubi-yellow-light: 32 92% 90%;
+    --suubi-yellow-dark: 32 92% 45%;
 
     --destructive: 0 84% 60%; /* Keep Suubi Red */
     --destructive-foreground: 0 0% 100%;
     --suubi-red-light: 0 84% 90%;
     --suubi-red-dark: 0 84% 50%;
 
-    --border: 138 20% 85%; /* Light green border */
-    --input: 138 20% 85%; /* Light green input borders */
-    --ring: 138 20% 55%; /* Use primary green for rings */
+    --border: 210 20% 90%; /* neutral borders */
+    --input: 210 20% 90%;
+    --ring: 214 52% 25%; /* Dark blue focus */
 
     --radius: 0.5rem;
 
     /* Chart colors using new palette */
-    --chart-1: 138 20% 55%; /* Green */
-    --chart-2: 44 99% 44%;  /* Yellow */
-    --chart-3: 280 8% 24%;  /* Dark Purple */
-    --chart-4: 138 30% 35%; /* Dark Green */
-    --chart-5: 44 99% 65%;  /* Light Yellow */
+    --chart-1: 214 52% 25%; /* Dark Blue */
+    --chart-2: 152 50% 37%; /* Green */
+    --chart-3: 32 92% 55%;  /* Orange */
+    --chart-4: 210 13% 35%; /* Cool Gray */
+    --chart-5: 152 28% 70%; /* Light Green */
   }
 
   .dark {
-    /* Dark Mode Colors - using the same scheme but darker versions */
-    --background: 280 8% 15%; /* Dark Purple/Grey background */
-    --foreground: 0 0% 95%;
+    /* Dark Mode Colors */
+    --background: 215 28% 12%; /* Deep Navy */
+    --foreground: 0 0% 96%;
 
-    --card: 280 8% 20%; /* Slightly lighter dark purple for cards */
+    --card: 215 28% 15%;
     --card-foreground: 0 0% 95%;
 
-    --popover: 280 8% 20%;
+    --popover: 215 28% 15%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 138 20% 50%; /* Green for dark mode */
+    --primary: 214 52% 35%; /* Dark Blue */
     --primary-foreground: 0 0% 100%;
     
     /* Dark mode green variants */
-    --suubi-green-50: 138 20% 20%;  
-    --suubi-green-100: 138 20% 25%;
-    --suubi-green-200: 138 20% 30%;
-    --suubi-green-300: 138 20% 35%;
-    --suubi-green-400: 138 20% 40%;
-    --suubi-green-500: 138 20% 50%;
-    --suubi-green-600: 138 20% 60%;
-    --suubi-green-700: 138 20% 70%;
-    --suubi-green-800: 138 20% 80%;
-    --suubi-green-900: 138 20% 90%;
+    --suubi-green-50: 152 20% 20%;  
+    --suubi-green-100: 152 20% 25%;
+    --suubi-green-200: 152 20% 30%;
+    --suubi-green-300: 152 20% 35%;
+    --suubi-green-400: 152 20% 40%;
+    --suubi-green-500: 152 30% 50%;
+    --suubi-green-600: 152 30% 60%;
+    --suubi-green-700: 152 30% 70%;
+    --suubi-green-800: 152 30% 80%;
+    --suubi-green-900: 152 30% 90%;
 
-    --secondary: 280 8% 24%; /* Dark purple stays similar */
+    --secondary: 152 50% 37%;
     --secondary-foreground: 0 0% 95%;
 
-    --muted: 280 8% 25%;
-    --muted-foreground: 280 8% 70%;
+    --muted: 215 28% 20%;
+    --muted-foreground: 210 13% 70%;
 
-    --accent: 44 99% 44%; /* Mustard yellow */
-    --accent-foreground: 280 8% 15%;
+    --accent: 32 92% 55%; /* Orange */
+    --accent-foreground: 215 28% 12%;
 
     --destructive: 0 72% 51%; /* Keep destructive */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 280 8% 30%;
-    --input: 280 8% 30%;
-    --ring: 138 20% 50%;
+    --border: 215 16% 24%;
+    --input: 215 16% 24%;
+    --ring: 214 52% 35%;
 
     /* Chart colors for dark mode */
-    --chart-1: 138 20% 60%; /* Green */
-    --chart-2: 44 99% 60%;  /* Yellow */
-    --chart-3: 280 8% 75%;  /* Light Purple/Grey */
-    --chart-4: 138 30% 45%; /* Darker Green */
-    --chart-5: 44 99% 75%;  /* Light Yellow */
+    --chart-1: 214 52% 40%; /* Dark Blue */
+    --chart-2: 152 40% 45%; /* Green */
+    --chart-3: 32 92% 60%;  /* Orange */
+    --chart-4: 210 13% 65%; /* Cool Gray */
+    --chart-5: 152 28% 60%; /* Light Green */
   }
 }
 
@@ -181,28 +182,33 @@
   }
 
   /* Add direct utility classes for our specific colors */
+  /* Updated to new palette:
+     - Dark Blue (navy): #1E3A5F
+     - Green (health): #2E8B57
+     - Orange (accent/CTA): #F7941D
+  */
   .bg-mustard {
-    background-color: #E1AD01;
+    background-color: #F7941D; /* Orange */
   }
 
   .bg-suubi-green {
-    background-color: #73A580;
+    background-color: #2E8B57; /* Health Green */
   }
 
   .bg-dark-purple {
-    background-color: #3E363F;
+    background-color: #1E3A5F; /* Dark Blue / Navy */
   }
 
   .text-mustard {
-    color: #E1AD01;
+    color: #F7941D;
   }
 
   .text-suubi-green {
-    color: #73A580;
+    color: #2E8B57;
   }
 
   .text-dark-purple {
-    color: #3E363F;
+    color: #1E3A5F;
   }
 }
 

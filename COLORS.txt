@@ -1,0 +1,53 @@
+Brand Color Palette for Suubi (Hospital Web)
+
+Primary Colors
+- Dark Blue: #1E3A5F
+  - Use for: headers, navbar background, key headings, primary buttons in dark sections
+- Green: #2E8B57
+  - Use for: success/positive actions, medical icons, outlines, secondary buttons, links
+- Orange: #F7941D
+  - Use for: CTAs, emphasis highlights, small badges, lifeline accents
+
+Neutrals & Backgrounds
+- Light Gray: #F5F7FA
+  - Use for: section backgrounds, cards background in light areas
+- White: #FFFFFF
+  - Use for: cards, surfaces, content areas
+- Cool Gray: #A3AAB2
+  - Use for: secondary text, captions, dividers
+
+Accent & Highlights
+- Teal Tint: #7BC6B3
+  - Use for: subtle accents, charts, decorative backgrounds
+- Warm Beige: #FFF3E6
+  - Use for: CTA section backgrounds, donation emphasis bands
+
+Tailwind/Theming Mapping
+- .bg-dark-purple -> now maps to Dark Blue (#1E3A5F)
+- .text-dark-purple -> now maps to Dark Blue (#1E3A5F)
+- .bg-suubi-green / .text-suubi-green -> Green (#2E8B57)
+- .bg-mustard / .text-mustard -> Orange (#F7941D)
+
+CSS Variables (Tailwind theme)
+- --primary: Dark Blue (#1E3A5F)
+- --secondary: Green (#2E8B57)
+- --accent: Orange (#F7941D)
+- --background: Light Gray (#F5F7FA)
+- --foreground: Cool Gray (#A3AAB2)
+
+Usage Guidelines
+- Navigation/Header: Dark Blue background, white text. Hover/active links may use Orange underline or Green text.
+- Primary Buttons: Orange on light backgrounds; Green as secondary. On dark blue sections, use white or Orange.
+- Icons: Prefer Green for health-related icons; Orange sparingly for emphasis.
+- Section Backgrounds: Alternate Light Gray (#F5F7FA) and White. Use Warm Beige (#FFF3E6) behind donation/CTA areas.
+- Lifeline Component: Use Orange (#F7941D) to draw attention without overwhelming.
+- Text: Headings in Dark Blue; body text in Cool Gray; keep high contrast for accessibility (WCAG AA).
+
+Accessibility Notes
+- Ensure contrast ratio >= 4.5:1 for body text. Dark Blue/White and Green/White meet contrast; Orange works best on white/dark blue with bold text.
+- Avoid large fields of Orange; reserve for CTAs and small accents.
+
+Examples in Code
+- Hero gradient: from Light Gray to faint Green tint
+- CTA button: .bg-mustard (Orange) with white text
+- Outline button: border .text-suubi-green; hover .bg-suubi-green .text-white

@@ -68,16 +68,16 @@ export default function ServicesPage() {
   };
   
   return (
-    <div className="min-h-screen py-12 bg-background">
+    <div className="min-h-screen py-8 md:py-12 bg-background">
       <div className="container-custom">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-12"
+          className="text-center mb-6 md:mb-8 lg:mb-12"
         >
-          <h1 className="text-4xl font-bold mb-4 text-dark-purple">Our Medical Services</h1>
-          <div className="w-48 h-6 mx-auto mb-4">
+          <h1 className="text-4xl font-bold mb-3 md:mb-4 text-dark-purple">Our Medical Services</h1>
+          <div className="w-48 h-6 mx-auto mb-3 md:mb-4">
             <Lifeline color="#E1AD01" height="12px" variant="minimal" />
           </div>
           <p className="text-dark-purple/80 max-w-2xl mx-auto">
@@ -86,7 +86,7 @@ export default function ServicesPage() {
         </motion.div>
         
         {/* Services Cards with Accordion */}
-        <div className="grid gap-6 max-w-4xl mx-auto">
+        <div className="grid gap-4 md:gap-6 max-w-4xl mx-auto">
           {services.map((service) => (
             <motion.div 
               key={service.id}
@@ -96,7 +96,7 @@ export default function ServicesPage() {
             >
               <Card className="border-[#73A580]/30 overflow-hidden">
                 <div 
-                  className="p-6 cursor-pointer"
+                  className="p-4 md:p-6 cursor-pointer"
                   onClick={() => toggleExpand(service.id)}
                 >
                   <div className="flex justify-between items-center">
@@ -125,15 +125,15 @@ export default function ServicesPage() {
                       transition={{ duration: 0.3 }}
                       className="overflow-hidden relative"
                     >
-                      <div className="px-6 pb-6 pt-2">
+                      <div className="px-4 md:px-6 pb-4 md:pb-6 pt-2">
                         {/* Lifeline separator */}
-                        <div className="h-6 mb-4">
+                        <div className="h-6 mb-3 md:mb-4">
                           <Lifeline color="#E1AD01" height="12px" variant="minimal" className="opacity-30" />
                         </div>
                         
-                        <p className="text-dark-purple/90 mb-4">{service.longDescription}</p>
+                        <p className="text-dark-purple/90 mb-3 md:mb-4">{service.longDescription}</p>
                         
-                        <div className="mt-6">
+                        <div className="mt-4 md:mt-6">
                           <h4 className="font-medium text-dark-purple mb-2">Common Procedures:</h4>
                           <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {service.procedures.map((procedure, index) => (
@@ -145,7 +145,7 @@ export default function ServicesPage() {
                           </ul>
                         </div>
                         
-                        <div className="mt-6">
+                        <div className="mt-4 md:mt-6">
                           <Link href={`/appointments?service=${service.id}`}>
                             <Button className="bg-mustard hover:bg-suubi-green text-dark-purple hover:text-white transition-colors">Schedule Appointment</Button>
                           </Link>
@@ -160,17 +160,17 @@ export default function ServicesPage() {
         </div>
         
         {/* CTA Section */}
-        <div className="mt-16 bg-[#73A580]/20 rounded-xl p-8 text-center relative overflow-hidden">
+        <div className="mt-8 md:mt-12 lg:mt-16 bg-[#73A580]/20 rounded-xl p-6 md:p-8 text-center relative overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-8">
             <Lifeline color="#E1AD01" height="16px" variant="thin" className="opacity-40" />
           </div>
           
-          <div className="max-w-2xl mx-auto py-6">
-            <h2 className="text-2xl font-bold mb-4 text-dark-purple">Not sure which service you need?</h2>
-            <p className="text-dark-purple/80 mb-6">
+          <div className="max-w-2xl mx-auto py-4 md:py-6">
+            <h2 className="text-2xl font-bold mb-3 md:mb-4 text-dark-purple">Not sure which service you need?</h2>
+            <p className="text-dark-purple/80 mb-4 md:mb-6">
               Our healthcare professionals can help determine the most appropriate services for your specific needs.
             </p>
-            <div className="flex flex-wrap gap-4 justify-center">
+            <div className="flex flex-wrap gap-3 md:gap-4 justify-center">
               <Link href="/contact">
                 <Button className="bg-mustard hover:bg-suubi-green text-dark-purple hover:text-white transition-colors">Contact Us</Button>
               </Link>
