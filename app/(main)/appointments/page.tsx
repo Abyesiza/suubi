@@ -1,55 +1,55 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { Calendar as CalendarIcon, Clock, MapPin, User, Search, Filter } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, MapPin, User, Search, Filter, Plus, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import Lifeline from '@/components/ui/Lifeline';
 import Loader from '@/components/ui/Loader';
+import { useQuery, useMutation } from 'convex/react';
+import { useUser } from '@clerk/nextjs';
+import { api } from '@/convex/_generated/api';
+import { Id } from '@/convex/_generated/dataModel';
+import { toast } from 'sonner';
 
-const appointments = [
-  {
-    id: 1,
-    doctor: 'Dr. Sarah Johnson',
-    specialty: 'Cardiologist',
-    date: '2024-03-20',
-    time: '10:00 AM',
-    location: 'Main Clinic, Room 204',
-    status: 'upcoming',
-  },
-  {
-    id: 2,
-    doctor: 'Dr. Michael Chen',
-    specialty: 'Pediatrician',
-    date: '2024-03-25',
-    time: '2:30 PM',
-    location: 'Children\'s Wing, Room 105',
-    status: 'upcoming',
-  },
-  {
-    id: 3,
-    doctor: 'Dr. Emily Rodriguez',
-    specialty: 'Neurologist',
-    date: '2024-04-02',
-    time: '1:15 PM',
-    location: 'Neurology Center, Room 310',
-    status: 'upcoming',
-  },
-  {
-    id: 4,
-    doctor: 'Dr. James Wilson',
-    specialty: 'Dermatologist',
-    date: '2024-04-10',
-    time: '9:45 AM',
-    location: 'Dermatology Wing, Room 122',
-    status: 'upcoming',
-  },
-];
+// Status badge component
+const StatusBadge = ({ status }: { status: string }) => {
+  const getStatusConfig = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return { color: 'bg-yellow-100 text-yellow-800', icon: AlertCircle };
+      case 'approved':
+        return { color: 'bg-blue-100 text-blue-800', icon: CheckCircle };
+      case 'confirmed':
+        return { color: 'bg-green-100 text-green-800', icon: CheckCircle };
+      case 'completed':
+        return { color: 'bg-gray-100 text-gray-800', icon: CheckCircle };
+      case 'cancelled':
+        return { color: 'bg-red-100 text-red-800', icon: XCircle };
+      case 'rescheduled':
+        return { color: 'bg-orange-100 text-orange-800', icon: AlertCircle };
+      case 'no_show':
+        return { color: 'bg-red-100 text-red-800', icon: XCircle };
+      default:
+        return { color: 'bg-gray-100 text-gray-800', icon: AlertCircle };
+    }
+  };
+
+  const config = getStatusConfig(status);
+  const Icon = config.icon;
+
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+      <Icon className="w-3 h-3" />
+      {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
+    </span>
+  );
+};
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -74,32 +74,166 @@ const itemVariants = {
 };
 
 export default function AppointmentsPage() {
+  const { user } = useUser();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSpecialty, setFilterSpecialty] = useState('all');
-  
-  // Handle scheduling action
-  const handleSchedule = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-  };
-  
+  const [selectedDoctor, setSelectedDoctor] = useState<string>('');
+  const [appointmentType, setAppointmentType] = useState<string>('consultation');
+  const [reason, setReason] = useState('');
+  const [showBookingForm, setShowBookingForm] = useState(false);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('');
+  const [preferredTime, setPreferredTime] = useState<string>('');
+
+  // Get current user from Convex
+  const currentUser = useQuery(api.users.getCurrentUser, { 
+    clerkId: user?.id 
+  });
+
+  // Get user's appointments
+  const userAppointments = useQuery(api.appointments.getPatientAppointmentsWithStaff, 
+    currentUser ? { patientId: currentUser._id } : "skip"
+  );
+
+  // Get available doctors
+  const availableDoctors = useQuery(api.staffProfiles.getAvailableDoctors);
+
+  // Get available time slots for selected doctor and date
+  const selectedDoctorUser = availableDoctors?.find(doctor => doctor.staffProfile._id === selectedDoctor)?.user;
+  const availableTimeSlots = useQuery(
+    api.staffProfiles.getStaffAvailableTimes,
+    selectedDoctorUser && date && showBookingForm ? {
+      staffUserId: selectedDoctorUser._id,
+      date: date.getTime()
+    } : "skip"
+  );
+
+  // Mutations
+  const createAppointment = useMutation(api.appointments.createAppointment);
+  const cancelAppointment = useMutation(api.appointments.cancelAppointment);
+  const confirmAppointment = useMutation(api.appointments.confirmAppointment);
+  // Removed createSampleAvailableTimes mutation
+
   // Filter appointments based on search query and specialty filter
-  const filteredAppointments = appointments.filter(appointment => {
-    const matchesSearch = appointment.doctor.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          appointment.specialty.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          appointment.location.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredAppointments = userAppointments?.filter(appointment => {
+    if (!appointment) return false;
     
-    const matchesSpecialty = filterSpecialty === 'all' || appointment.specialty === filterSpecialty;
+    const doctorName = `${appointment.staffUser?.firstName || ''} ${appointment.staffUser?.lastName || ''}`.toLowerCase();
+    const specialty = appointment.staffProfile?.specialty?.toLowerCase() || '';
+    const location = appointment.location?.toLowerCase() || '';
+    
+    const matchesSearch = doctorName.includes(searchQuery.toLowerCase()) || 
+                          specialty.includes(searchQuery.toLowerCase()) ||
+                          location.includes(searchQuery.toLowerCase());
+    
+    const matchesSpecialty = filterSpecialty === 'all' || specialty === filterSpecialty.toLowerCase();
     
     return matchesSearch && matchesSpecialty;
-  });
+  }) || [];
   
   // Get unique specialties for filter dropdown
-  const specialties = Array.from(new Set(appointments.map(apt => apt.specialty)));
+  const specialties = Array.from(new Set(
+    availableDoctors?.map(doctor => doctor.staffProfile.specialty).filter(Boolean) || []
+  ));
+
+  // Handle appointment booking
+  const handleBookAppointment = async () => {
+    if (!currentUser || !selectedDoctor || !date || !selectedTimeSlot) {
+      toast.error('Please fill in all required fields including time slot');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const appointmentDate = new Date(date);
+      const [hours, minutes] = selectedTimeSlot.split(':').map(Number);
+      appointmentDate.setHours(hours, minutes, 0, 0);
+
+      await createAppointment({
+        patientId: currentUser._id,
+        staffProfileId: selectedDoctor as Id<"staff_profiles">,
+        appointmentDate: appointmentDate.getTime(),
+        duration: 30,
+        appointmentType: appointmentType as any,
+        reason: reason || undefined,
+        createdById: currentUser._id,
+      });
+
+      toast.success('Appointment booked successfully!');
+      setShowBookingForm(false);
+      setSelectedDoctor('');
+      setSelectedTimeSlot('');
+      setPreferredTime('');
+      setReason('');
+      setDate(new Date());
+    } catch (error) {
+      console.error('Error booking appointment:', error);
+      toast.error('Failed to book appointment. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle appointment cancellation
+  const handleCancelAppointment = async (appointmentId: Id<"appointments">) => {
+    if (!currentUser) return;
+
+    try {
+      await cancelAppointment({
+        appointmentId,
+        cancelledBy: currentUser._id,
+        cancellationReason: 'Cancelled by patient',
+      });
+      toast.success('Appointment cancelled successfully');
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+      toast.error('Failed to cancel appointment');
+    }
+  };
+
+  // Handle appointment confirmation
+  const handleConfirmAppointment = async (appointmentId: Id<"appointments">) => {
+    if (!currentUser) return;
+
+    try {
+      await confirmAppointment({
+        appointmentId,
+        confirmedBy: currentUser._id,
+      });
+      toast.success('Appointment confirmed successfully');
+    } catch (error) {
+      console.error('Error confirming appointment:', error);
+      toast.error('Failed to confirm appointment');
+    }
+  };
+
+  // Removed handler for creating sample available times
+
+  // Helper function to convert time string to minutes
+  const timeStringToMinutes = (timeString: string): number => {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  // Format date for display
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  // Format time for display
+  const formatTime = (timestamp: number) => {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
 
   return (
     <div className="min-h-screen py-12 bg-background">
@@ -118,6 +252,8 @@ export default function AppointmentsPage() {
             Schedule and track your medical appointments with our healthcare professionals.
           </p>
         </motion.div>
+
+        {/* Removed sample data button */}
 
         <div className="grid lg:grid-cols-3 gap-8">
           <motion.div
@@ -157,9 +293,19 @@ export default function AppointmentsPage() {
                 </div>
               </div>
               
-              {filteredAppointments.length === 0 ? (
+              {!userAppointments ? (
                 <div className="py-8 text-center">
-                  <p className="text-muted-foreground">No appointments found matching your search criteria.</p>
+                  <Loader size="md" text="Loading appointments..." />
+                </div>
+              ) : filteredAppointments.length === 0 ? (
+                <div className="py-8 text-center">
+                  <p className="text-muted-foreground">
+                    {userAppointments.length === 0 
+                      ? "You don't have any appointments yet." 
+                      : "No appointments found matching your search criteria."
+                    }
+                  </p>
+                  {userAppointments.length > 0 && (
                   <Button
                     variant="link"
                     className="mt-2 text-primary"
@@ -170,6 +316,7 @@ export default function AppointmentsPage() {
                   >
                     Clear filters
                   </Button>
+                  )}
                 </div>
               ) : (
                 <motion.div
@@ -180,32 +327,75 @@ export default function AppointmentsPage() {
                 >
                   {filteredAppointments.map((appointment) => (
                     <motion.div
-                      key={appointment.id}
+                      key={appointment._id}
                       variants={itemVariants}
                       className="border border-green-light rounded-lg p-4 hover:shadow-md transition-shadow bg-card relative overflow-hidden"
                     >
                       <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-semibold text-lg text-foreground">{appointment.doctor}</h3>
-                          <p className="text-primary">{appointment.specialty}</p>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-semibold text-lg text-foreground">
+                              Dr. {appointment.staffUser?.firstName} {appointment.staffUser?.lastName}
+                            </h3>
+                            <StatusBadge status={appointment.status} />
+                          </div>
+                          <p className="text-primary mb-2">{appointment.staffProfile?.specialty || 'General Practice'}</p>
                           <div className="mt-2 space-y-1 text-muted-foreground">
                             <div className="flex items-center gap-2">
                               <CalendarIcon className="w-4 h-4 text-primary" />
-                              <span>{appointment.date}</span>
+                              <span>{formatDate(appointment.appointmentDate)}</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <Clock className="w-4 h-4 text-primary" />
-                              <span>{appointment.time}</span>
+                              <span>{formatTime(appointment.appointmentDate)}</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <MapPin className="w-4 h-4 text-primary" />
-                              <span>{appointment.location}</span>
+                              <span>{appointment.location || 'Main Clinic'}</span>
                             </div>
+                            {appointment.reason && (
+                              <div className="mt-2">
+                                <p className="text-sm text-muted-foreground">
+                                  <strong>Reason:</strong> {appointment.reason}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <div className="flex flex-col gap-2">
-                          <Button variant="outline" className="border-primary text-primary hover:bg-primary/10">Reschedule</Button>
-                          <Button variant="outline" className="border-accent text-accent hover:bg-accent/10">Cancel</Button>
+                        <div className="flex flex-col gap-2 ml-4">
+                          {appointment.status === 'approved' && (
+                            <Button 
+                              variant="outline" 
+                              className="border-green-500 text-green-600 hover:bg-green-50"
+                              onClick={() => handleConfirmAppointment(appointment._id)}
+                            >
+                              Confirm
+                            </Button>
+                          )}
+                          {appointment.status === 'pending' && (
+                            <Button variant="outline" className="border-yellow-500 text-yellow-600 hover:bg-yellow-50">
+                              Pending Approval
+                            </Button>
+                          )}
+                          {appointment.status === 'confirmed' && (
+                            <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
+                              Confirmed
+                            </Button>
+                          )}
+                          {appointment.status === 'completed' && (
+                            <Button variant="outline" className="border-gray-500 text-gray-600 hover:bg-gray-50">
+                              Completed
+                            </Button>
+                          )}
+                          {['pending', 'approved', 'confirmed'].includes(appointment.status) && (
+                            <Button 
+                              variant="outline" 
+                              className="border-red-500 text-red-600 hover:bg-red-50"
+                              onClick={() => handleCancelAppointment(appointment._id)}
+                            >
+                              Cancel
+                            </Button>
+                          )}
                         </div>
                       </div>
                       {/* Small lifeline at the bottom of each appointment card */}
@@ -230,20 +420,181 @@ export default function AppointmentsPage() {
             transition={{ duration: 0.5 }}
           >
             <Card className="p-6 border-green-light">
-              <h2 className="text-2xl font-semibold mb-6 text-foreground">Book New Appointment</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-semibold text-foreground">Book New Appointment</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowBookingForm(!showBookingForm)}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  {showBookingForm ? 'Cancel' : 'New Booking'}
+                </Button>
+              </div>
+
+              
+
+              {/* Booking Form - Only visible when showBookingForm is true */}
+              {showBookingForm ? (
               <div className="space-y-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="doctor-type">Doctor Specialty</Label>
-                  <select
-                    id="doctor-type"
-                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
-                  >
-                    <option value="">Select a specialty</option>
-                    {specialties.map(specialty => (
-                      <option key={specialty} value={specialty}>{specialty}</option>
-                    ))}
-                    <option value="other">Other</option>
+
+                  {/* Doctor Selection - inside booking form */}
+                  <div className="grid gap-2">
+                    <Label htmlFor="doctor-select">Select Doctor</Label>
+                    <select
+                      id="doctor-select"
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+                      value={selectedDoctor}
+                      onChange={(e) => {
+                        setSelectedDoctor(e.target.value);
+                        setSelectedTimeSlot(''); // Reset time slot when doctor changes
+                        setPreferredTime(''); // Reset preferred time when doctor changes
+                      }}
+                    >
+                      <option value="">Select a doctor</option>
+                      {availableDoctors?.map(doctor => (
+                        <option key={doctor.staffProfile._id} value={doctor.staffProfile._id}>
+                          Dr. {doctor.user.firstName} {doctor.user.lastName} - {doctor.staffProfile.specialty || 'General Practice'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Time Slot Selection - inside booking form */}
+                  {selectedDoctor && date && (
+                    <div className="grid gap-2">
+                      <Label>Select Time Slot</Label>
+                      {!availableTimeSlots ? (
+                        <div className="flex justify-center py-4">
+                          <Loader size="sm" text="Loading available times..." />
+                        </div>
+                      ) : availableTimeSlots.length === 0 ? (
+                        <div className="text-center py-4 text-muted-foreground">
+                          <p>No available time slots for this doctor on the selected date.</p>
+                          <p className="text-sm mt-1">This doctor may not have set up their availability schedule yet.</p>
+                          <p className="text-sm">Please try a different date or doctor.</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                          {(() => {
+                            // Generate 30-minute slots from available time ranges
+                            const generatedSlots: Array<{startTime: string, endTime: string, isPreferred: boolean}> = [];
+                            
+                            availableTimeSlots
+                              .filter(slot => slot.isAvailable !== false)
+                              .forEach(slot => {
+                                const slotStartTime = timeStringToMinutes(slot.startTime);
+                                const slotEndTime = timeStringToMinutes(slot.endTime);
+                                
+                                // Generate 30-minute slots within this time range
+                                for (let time = slotStartTime; time + 30 <= slotEndTime; time += 30) {
+                                  const startTimeStr = `${Math.floor(time / 60).toString().padStart(2, '0')}:${(time % 60).toString().padStart(2, '0')}`;
+                                  const endTimeStr = `${Math.floor((time + 30) / 60).toString().padStart(2, '0')}:${((time + 30) % 60).toString().padStart(2, '0')}`;
+                                  
+                                  const isPreferred = !!(preferredTime && 
+                                    Math.abs(time - timeStringToMinutes(preferredTime)) <= 30);
+                                  
+                                  generatedSlots.push({
+                                    startTime: startTimeStr,
+                                    endTime: endTimeStr,
+                                    isPreferred
+                                  });
+                                }
+                              });
+
+                            // Dedupe overlapping ranges that produce the same 30-min slot
+                            const seenKeys = new Set<string>();
+                            const uniqueSlots = generatedSlots.filter((slot) => {
+                              const key = `${slot.startTime}-${slot.endTime}`;
+                              if (seenKeys.has(key)) return false;
+                              seenKeys.add(key);
+                              return true;
+                            });
+                            
+                            // Sort by preferred time if set, otherwise by time
+                            uniqueSlots.sort((a, b) => {
+                              if (preferredTime) {
+                                const preferredMinutes = timeStringToMinutes(preferredTime);
+                                const aMinutes = timeStringToMinutes(a.startTime);
+                                const bMinutes = timeStringToMinutes(b.startTime);
+                                const aDiff = Math.abs(aMinutes - preferredMinutes);
+                                const bDiff = Math.abs(bMinutes - preferredMinutes);
+                                return aDiff - bDiff;
+                              }
+                              return a.startTime.localeCompare(b.startTime);
+                            });
+                            
+                            return uniqueSlots.map((slot) => (
+                              <button
+                                key={`${slot.startTime}-${slot.endTime}`}
+                                type="button"
+                                className={`p-3 rounded-md border text-sm transition-colors relative ${
+                                  selectedTimeSlot === slot.startTime
+                                    ? 'border-primary bg-primary text-white'
+                                    : slot.isPreferred
+                                    ? 'border-green-500 bg-green-50 hover:border-green-600'
+                                    : 'border-gray-200 hover:border-primary hover:bg-primary/5'
+                                }`}
+                                onClick={() => setSelectedTimeSlot(slot.startTime)}
+                              >
+                                <div className="font-medium">{slot.startTime}</div>
+                                <div className="text-xs opacity-75">{slot.endTime}</div>
+                                {slot.isPreferred && (
+                                  <div className="absolute top-1 right-1 text-xs text-green-600 font-bold">
+                                    ★
+                                  </div>
+                                )}
+                              </button>
+                            ));
+                          })()}
+                        </div>
+                      )}
+                      
+                      {availableTimeSlots && availableTimeSlots.length > 0 && (
+                        <div className="text-sm text-muted-foreground text-center mt-2">
+                          {(() => {
+                            const generatedSlotsCount = availableTimeSlots
+                              .filter(slot => slot.isAvailable !== false)
+                              .reduce((total, slot) => {
+                                const slotStartTime = timeStringToMinutes(slot.startTime);
+                                const slotEndTime = timeStringToMinutes(slot.endTime);
+                                const slotsInRange = Math.floor((slotEndTime - slotStartTime) / 30);
+                                return total + slotsInRange;
+                              }, 0);
+                            return `Showing ${generatedSlotsCount} available time slots`;
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="appointment-type">Appointment Type</Label>
+                    <select
+                      id="appointment-type"
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+                      value={appointmentType}
+                      onChange={(e) => setAppointmentType(e.target.value)}
+                    >
+                      <option value="consultation">Consultation</option>
+                      <option value="follow_up">Follow-up</option>
+                      <option value="routine_checkup">Routine Checkup</option>
+                      <option value="emergency">Emergency</option>
+                      <option value="specialist_referral">Specialist Referral</option>
+                      <option value="telemedicine">Telemedicine</option>
+                      <option value="in_person">In-Person</option>
                   </select>
+                </div>
+                  
+                  <div className="grid gap-2">
+                    <Label htmlFor="reason">Reason for Visit (Optional)</Label>
+                    <Input
+                      id="reason"
+                      placeholder="Brief description of your symptoms or concerns"
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                    />
                 </div>
                 
                 <div className="grid gap-2">
@@ -251,32 +602,71 @@ export default function AppointmentsPage() {
                   <Calendar
                     mode="single"
                     selected={date}
-                    onSelect={setDate}
+                      onSelect={(newDate) => {
+                        setDate(newDate);
+                        setSelectedTimeSlot(''); // Reset time slot when date changes
+                        setPreferredTime(''); // Reset preferred time when date changes
+                      }}
                     className="rounded-md border border-green-light"
                     disabled={(date) => {
-                      // Disable past dates and weekends
+                        // Only disable past dates - hospitals work 24/7
                       const now = new Date();
                       now.setHours(0, 0, 0, 0);
-                      const day = date.getDay();
-                      return date < now || day === 0 || day === 6;
+                        return date < now;
                     }}
                   />
                 </div>
+
+                  {/* Preferred Time Input */}
+                  {selectedDoctor && date && (
+                    <div className="grid gap-2">
+                      <Label htmlFor="preferred-time">Preferred Time (Optional)</Label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="preferred-time"
+                          type="time"
+                          className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+                          value={preferredTime}
+                          onChange={(e) => setPreferredTime(e.target.value)}
+                          placeholder="Select your preferred time"
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          We'll try to match this time
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 
                 {isLoading ? (
                   <div className="flex justify-center py-2">
-                    <Loader size="sm" text="Finding available slots..." />
+                      <Loader size="sm" text="Booking appointment..." />
                   </div>
                 ) : (
                   <Button 
                     className="w-full btn-primary"
-                    onClick={handleSchedule}
+                      onClick={handleBookAppointment}
+                      disabled={!selectedDoctor || !date || !selectedTimeSlot}
+                    >
+                      <User className="w-4 h-4 mr-2" />
+                      Book Appointment
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">
+                    Ready to book your next appointment?
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowBookingForm(true)}
+                    className="flex items-center gap-2"
                   >
-                    <User className="w-4 h-4 mr-2" />
-                    Check Available Times
+                    <Plus className="w-4 h-4" />
+                    Start Booking
                   </Button>
+                </div>
                 )}
-              </div>
             </Card>
             
             {/* Health Tips Card - NEW */}

@@ -4,40 +4,131 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Star, Mail, Calendar, Phone, Award, ThumbsUp } from 'lucide-react';
+import { Star, Mail, Calendar, Phone, Award, ThumbsUp, RefreshCw } from 'lucide-react';
 import Lifeline from '@/components/ui/Lifeline';
 import Link from 'next/link';
-import { useQuery } from 'convex/react';
+import { useRouter } from 'next/navigation';
+import { useQuery, useMutation } from 'convex/react';
+import { useUser } from '@clerk/nextjs';
 import { api } from '@/convex/_generated/api';
+import { Id } from '@/convex/_generated/dataModel';
 
 export default function DoctorsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [isCreatingRoom, setIsCreatingRoom] = useState<string | null>(null);
+  const [isFixing, setIsFixing] = useState(false);
+  
+  const router = useRouter();
+  const { user: clerkUser } = useUser();
 
-  // Fetch all staff users (non-admin) directly from users table
-  const staffUsersRaw = useQuery(api.users.listStaffUsers, {} as any);
-  const isLoading = staffUsersRaw === undefined;
-  const staffUsers = staffUsersRaw ?? [];
+  // Fetch all doctors from staff profiles
+  const doctorsRaw = useQuery(api.staffProfiles.listStaffWithUsers, { 
+    role: "doctor" 
+  });
+
+  // Get current user from Convex
+  const currentUser = useQuery(
+    api.users.getCurrentUser,
+    clerkUser?.id ? { clerkId: clerkUser.id } : "skip"
+  );
+
+  // Mutations
+  const createRoomWithStaffProfile = useMutation(api.room.createOrGetRoomWithStaffProfile);
+  const checkAndFixDatabase = useMutation(api.staffProfiles.checkAndFixDatabaseState);
+
+  const isLoading = doctorsRaw === undefined;
+  const doctorsData = doctorsRaw ?? [];
 
   const doctors = useMemo(() => {
-    return staffUsers.map((user) => {
-      const firstName = user?.firstName ?? '';
-      const lastName = user?.lastName ?? '';
-      const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'Staff';
-      const image = user?.imageUrl || 'https://via.placeholder.com/600x400?text=Staff';
-      const roleLabel = String(user.role || '').replace(/_/g, ' ');
-      const subRoleLabel = user?.subRole ? String(user.subRole).replace(/_/g, ' ') : '';
-      return {
-        id: String(user._id),
-        name: fullName,
-        image,
-        specialty: subRoleLabel || roleLabel || 'General',
-        experience: '—',
-        rating: 0,
-        bio: '—',
-        availability: '—',
-      };
-    });
-  }, [staffUsers]);
+    return doctorsData
+      .filter((doctorData: any) => {
+        // Filter out entries that don't have both user and staffProfile
+        if (!doctorData || !doctorData.user || !doctorData.staffProfile) {
+          return false;
+        }
+        return true;
+      })
+      .map((doctorData: any) => {
+        const { user, staffProfile } = doctorData;
+
+        // Additional safety checks
+        if (!user || !staffProfile) {
+          return null;
+        }
+
+        const firstName = user?.firstName ?? '';
+        const lastName = user?.lastName ?? '';
+        const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'Dr. Staff';
+        const image = staffProfile?.profileImage || user?.imageUrl || 'https://via.placeholder.com/600x400?text=Doctor';
+        const specialty = staffProfile?.specialty || staffProfile?.subRole || 'General Practice';
+        const experience = staffProfile?.experience ? `${staffProfile.experience} years` : '—';
+        const rating = staffProfile?.rating || 0;
+        const bio = staffProfile?.bio || 'Experienced healthcare professional dedicated to providing quality care.';
+        const availability = staffProfile?.isAvailable ? 'Available' : 'Not Available';
+
+        return {
+          id: String(staffProfile._id), // Use staff profile ID for chat functionality
+          userId: String(user._id), // Keep user ID for reference
+          name: fullName,
+          image,
+          specialty: specialty.replace(/_/g, ' '),
+          experience,
+          rating: rating.toFixed(1),
+          bio,
+          availability,
+          consultationFee: staffProfile?.consultationFee,
+          qualifications: staffProfile?.qualifications || [],
+          languages: staffProfile?.languages || [],
+        };
+      })
+      .filter((doctor): doctor is NonNullable<typeof doctor> => doctor !== null); // Remove any null entries
+  }, [doctorsData]);
+
+  // Handle database fix
+  const handleFixDatabase = async () => {
+    setIsFixing(true);
+    try {
+      const result = await checkAndFixDatabase();
+      console.log("Database fix result:", result);
+      // The page will automatically refresh due to reactive queries
+    } catch (error) {
+      console.error("Failed to fix database:", error);
+    } finally {
+      setIsFixing(false);
+    }
+  };
+
+  // Handle chat button click - create room and navigate to chat
+  const handleStartChat = async (staffProfileId: string) => {
+    if (!currentUser) {
+      console.error("User not logged in");
+      return;
+    }
+
+    setIsCreatingRoom(staffProfileId);
+    try {
+      console.log("Creating room for patient:", {
+        patientName: `${currentUser.firstName} ${currentUser.lastName}`,
+        patientEmail: currentUser.email,
+        staffProfileId
+      });
+
+      // Create or get existing room
+      const roomId = await createRoomWithStaffProfile({
+        patientUserId: currentUser._id,
+        staffProfileId: staffProfileId as Id<"staff_profiles">,
+      });
+
+      console.log("Room created successfully:", roomId);
+
+      // Navigate to chat page with the room
+      router.push(`/chat?staffProfileId=${staffProfileId}`);
+    } catch (error) {
+      console.error("Failed to create chat room:", error);
+    } finally {
+      setIsCreatingRoom(null);
+    }
+  };
 
   return (
     <div className="min-h-screen py-12 bg-background">
@@ -93,9 +184,11 @@ export default function DoctorsPage() {
                   <div className="p-5 flex-1 flex flex-col">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="text-xl font-semibold text-foreground">{doctor.name}</h3>
-                      <div className="flex items-center">
-                        <Star className="h-4 w-4 text-amber-500 fill-amber-500 mr-1" />
-                        <span className="text-sm font-medium">{doctor.rating}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center">
+                          <Star className="h-4 w-4 text-amber-500 fill-amber-500 mr-1" />
+                          <span className="text-sm font-medium">{doctor.rating}</span>
+                        </div>
                       </div>
                     </div>
 
@@ -105,6 +198,13 @@ export default function DoctorsPage() {
                       <Award className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">{doctor.experience} experience</span>
                     </div>
+
+                    {doctor.consultationFee && (
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-sm text-muted-foreground">Consultation Fee:</span>
+                        <span className="text-sm font-medium text-primary">${doctor.consultationFee}</span>
+                      </div>
+                    )}
 
                     <p className="text-muted-foreground text-sm mb-4 flex-1">
                       {expandedId === doctor.id ? doctor.bio : `${(doctor.bio || '').substring(0, 80)}...`}
@@ -118,20 +218,57 @@ export default function DoctorsPage() {
                       {expandedId === doctor.id ? 'Show less' : 'Read more'}
                     </Button>
 
+                    {expandedId === doctor.id && (
+                      <div className="mb-4 space-y-2">
+                        {doctor.qualifications && doctor.qualifications.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-medium text-foreground mb-1">Qualifications:</h4>
+                            <div className="flex flex-wrap gap-1">
+                              {doctor.qualifications.map((qual: string, index: number) => (
+                                <span key={index} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                  {qual}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {doctor.languages && doctor.languages.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-medium text-foreground mb-1">Languages:</h4>
+                            <div className="flex flex-wrap gap-1">
+                              {doctor.languages.map((lang: string, index: number) => (
+                                <span key={index} className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                  {lang}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex items-center text-sm text-muted-foreground gap-2 mb-4">
                       <Calendar className="h-4 w-4 text-primary" />
                       <span>Available: {doctor.availability}</span>
                     </div>
 
                     <div className="flex gap-2 mt-auto">
-                      <Link href={`/appointments?doctor=${doctor.id}`} className="flex-1">
+                      <Link href={`/appointments?doctor=${doctor.userId}`} className="flex-1">
                         <Button className="w-full btn-primary">Book Appointment</Button>
                       </Link>
-                      <Link href={`/chat?doctor=${doctor.id}`}>
-                        <Button variant="outline" className="border-primary">
+                      <Button 
+                        variant="outline" 
+                        className="border-primary"
+                        onClick={() => handleStartChat(doctor.id)}
+                        disabled={!currentUser || isCreatingRoom === doctor.id}
+                      >
+                        {isCreatingRoom === doctor.id ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
                           <Mail className="h-4 w-4" />
-                        </Button>
-                      </Link>
+                        )}
+                      </Button>
                     </div>
                   </div>
                 </Card>
