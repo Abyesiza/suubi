@@ -217,8 +217,9 @@ export default function ContactPage() {
                   <div>
                     <h3 className="text-lg font-medium text-dark-purple mb-1">Our Location</h3>
                     <p className="text-dark-purple/70">
-                      123 Healthcare Avenue,<br />
-                      Kampala, Uganda
+                      Level 1 Ssebowa House,<br />
+                      Plot 1 Ssekajja Road, Kayunga Central<br />
+                      Kayunga, Uganda
                     </p>
                   </div>
                 </div>
@@ -230,8 +231,8 @@ export default function ContactPage() {
                   <div>
                     <h3 className="text-lg font-medium text-dark-purple mb-1">Phone</h3>
                     <p className="text-dark-purple/70">
-                      Main: +256 123 456 789<br />
-                      Emergency: +256 987 654 321
+                      Main: +256 772 670 744<br />
+                      Emergency: +256 700 304 407
                     </p>
                   </div>
                 </div>
@@ -254,19 +255,14 @@ export default function ContactPage() {
                     <Clock className="h-5 w-5 text-mustard" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-medium text-dark-purple mb-1">Office Hours</h3>
+                    <h3 className="text-lg font-medium text-dark-purple mb-1">Operating Hours</h3>
                     <div className="text-dark-purple/70 space-y-1">
                       <div className="flex justify-between">
-                        <span>Monday - Friday:</span>
-                        <span>8:00 AM - 6:00 PM</span>
+                        <span>Monday - Sunday:</span>
+                        <span>24 Hours</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Saturday:</span>
-                        <span>9:00 AM - 4:00 PM</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Sunday:</span>
-                        <span>Closed</span>
+                      <div className="text-sm text-mustard font-medium">
+                        Open every day of the week
                       </div>
                     </div>
                   </div>
@@ -308,7 +304,7 @@ export default function ContactPage() {
               please call our emergency line or visit our facility immediately.
             </p>
             <Button className="bg-mustard hover:bg-suubi-green text-dark-purple hover:text-white transition-colors px-8">
-              Call Emergency: +256 987 654 321
+              Call Emergency: +256 700 304 407
             </Button>
           </div>
           

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Star, Mail, Calendar, Phone, Award, ThumbsUp, RefreshCw } from 'lucide-react';
 import Lifeline from '@/components/ui/Lifeline';
 import Link from 'next/link';
@@ -17,14 +18,17 @@ export default function DoctorsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isCreatingRoom, setIsCreatingRoom] = useState<string | null>(null);
   const [isFixing, setIsFixing] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   
   const router = useRouter();
   const { user: clerkUser } = useUser();
 
-  // Fetch all doctors from staff profiles
-  const doctorsRaw = useQuery(api.staffProfiles.listStaffWithUsers, { 
-    role: "doctor" 
-  });
+  // Fetch staff from profiles; exclude admin roles in backend
+  const doctorsRaw = useQuery(
+    api.staffProfiles.listStaffWithUsers,
+    selectedRole === 'all' ? {} : { role: selectedRole as any }
+  );
 
   // Get current user from Convex
   const currentUser = useQuery(
@@ -40,6 +44,7 @@ export default function DoctorsPage() {
   const doctorsData = doctorsRaw ?? [];
 
   const doctors = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
     return doctorsData
       .filter((doctorData: any) => {
         // Filter out entries that don't have both user and staffProfile
@@ -81,8 +86,21 @@ export default function DoctorsPage() {
           languages: staffProfile?.languages || [],
         };
       })
-      .filter((doctor): doctor is NonNullable<typeof doctor> => doctor !== null); // Remove any null entries
-  }, [doctorsData]);
+      .filter((doctor): doctor is NonNullable<typeof doctor> => doctor !== null)
+      .filter((doctor) => {
+        if (!normalizedQuery) return true;
+        const name = doctor.name.toLowerCase();
+        const specialty = (doctor.specialty || '').toLowerCase();
+        const quals = (doctor.qualifications || []).join(' ').toLowerCase();
+        const langs = (doctor.languages || []).join(' ').toLowerCase();
+        return (
+          name.includes(normalizedQuery) ||
+          specialty.includes(normalizedQuery) ||
+          quals.includes(normalizedQuery) ||
+          langs.includes(normalizedQuery)
+        );
+      }); // Remove any null entries and apply search filter
+  }, [doctorsData, searchQuery]);
 
   // Handle database fix
   const handleFixDatabase = async () => {
@@ -139,7 +157,7 @@ export default function DoctorsPage() {
           transition={{ duration: 0.5 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl font-bold mb-4 text-foreground">Our Expert Doctors</h1>
+          <h1 className="text-4xl font-bold mb-4 text-foreground">Our Expert Staff</h1>
           <div className="w-48 h-6 mx-auto mb-4">
             <Lifeline color="#FF9933" height="12px" variant="minimal" />
           </div>
@@ -147,6 +165,33 @@ export default function DoctorsPage() {
             Meet our team of experienced healthcare professionals dedicated to providing you with the highest quality care.
           </p>
         </motion.div>
+
+        {/* Search + Role filter */}
+        <div className="mb-6 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+          <div className="w-full md:w-1/2">
+            <Input
+              placeholder="Search staff by name, specialty, language..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="flex justify-end w-full md:w-auto">
+            <select
+              className="w-full md:w-[220px] h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+            >
+              <option value="all">All Staff</option>
+              <option value="doctor">Doctors</option>
+              <option value="nurse">Nurses</option>
+              <option value="allied_health">Allied Health</option>
+              <option value="support_staff">Support Staff</option>
+              <option value="administrative_staff">Administrative Staff</option>
+              <option value="technical_staff">Technical Staff</option>
+              <option value="training_research_staff">Training & Research</option>
+            </select>
+          </div>
+        </div>
 
         {isLoading ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -156,7 +201,7 @@ export default function DoctorsPage() {
           </div>
         ) : doctors.length === 0 ? (
           <div className="text-center py-20">
-            <h3 className="text-2xl font-semibold mb-2 text-foreground">No doctors found</h3>
+            <h3 className="text-2xl font-semibold mb-2 text-foreground">No staff found</h3>
             <p className="text-muted-foreground mb-4">Try adjusting your search criteria</p>
           </div>
         ) : (
@@ -202,7 +247,7 @@ export default function DoctorsPage() {
                     {doctor.consultationFee && (
                       <div className="flex items-center gap-2 mb-3">
                         <span className="text-sm text-muted-foreground">Consultation Fee:</span>
-                        <span className="text-sm font-medium text-primary">${doctor.consultationFee}</span>
+                        <span className="text-sm font-medium text-primary">UGX {doctor.consultationFee?.toLocaleString()}</span>
                       </div>
                     )}
 
@@ -254,7 +299,7 @@ export default function DoctorsPage() {
                     </div>
 
                     <div className="flex gap-2 mt-auto">
-                      <Link href={`/appointments?doctor=${doctor.userId}`} className="flex-1">
+                      <Link href={`/appointments?staffProfileId=${doctor.id}`} className="flex-1">
                         <Button className="w-full btn-primary">Book Appointment</Button>
                       </Link>
                       <Button 

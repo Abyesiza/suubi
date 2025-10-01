@@ -13,6 +13,7 @@ import Lifeline from '@/components/ui/Lifeline';
 import Loader from '@/components/ui/Loader';
 import { useQuery, useMutation } from 'convex/react';
 import { useUser } from '@clerk/nextjs';
+import { useSearchParams } from 'next/navigation';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
@@ -75,6 +76,7 @@ const itemVariants = {
 
 export default function AppointmentsPage() {
   const { user } = useUser();
+  const searchParams = useSearchParams();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -85,22 +87,26 @@ export default function AppointmentsPage() {
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('');
   const [preferredTime, setPreferredTime] = useState<string>('');
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
-  // Get current user from Convex
-  const currentUser = useQuery(api.users.getCurrentUser, { 
-    clerkId: user?.id 
-  });
+  // Get current user from Convex (skip when not authenticated)
+  const currentUser = useQuery(
+    api.users.getCurrentUser,
+    user?.id ? { clerkId: user.id } : "skip"
+  );
 
   // Get user's appointments
   const userAppointments = useQuery(api.appointments.getPatientAppointmentsWithStaff, 
     currentUser ? { patientId: currentUser._id } : "skip"
   );
 
-  // Get available doctors
-  const availableDoctors = useQuery(api.staffProfiles.getAvailableDoctors);
+  // Get available medical staff (doctors, nurses, allied health)
+  const availableDoctors = useQuery(api.users.getMedicalStaff, {});
 
   // Get available time slots for selected doctor and date
-  const selectedDoctorUser = availableDoctors?.find(doctor => doctor.staffProfile._id === selectedDoctor)?.user;
+  const selectedStaff = availableDoctors?.find(doctor => doctor.staffProfile._id === selectedDoctor);
+  const selectedDoctorUser = selectedStaff?.user;
+  const selectedStaffProfile = selectedStaff?.staffProfile;
   const availableTimeSlots = useQuery(
     api.staffProfiles.getStaffAvailableTimes,
     selectedDoctorUser && date && showBookingForm ? {
@@ -108,6 +114,15 @@ export default function AppointmentsPage() {
       date: date.getTime()
     } : "skip"
   );
+  // Preselect staff profile from URL and open booking form
+  useEffect(() => {
+    const preselectId = searchParams.get('staffProfileId');
+    if (preselectId) {
+      setSelectedDoctor(preselectId);
+      setShowBookingForm(true);
+    }
+  }, [searchParams]);
+
 
   // Mutations
   const createAppointment = useMutation(api.appointments.createAppointment);
@@ -137,27 +152,36 @@ export default function AppointmentsPage() {
     availableDoctors?.map(doctor => doctor.staffProfile.specialty).filter(Boolean) || []
   ));
 
+  const isAuthenticated = !!currentUser;
+  const canSubmit = !!(isAuthenticated && selectedDoctor && date && selectedTimeSlot);
+
   // Handle appointment booking
   const handleBookAppointment = async () => {
-    if (!currentUser || !selectedDoctor || !date || !selectedTimeSlot) {
-      toast.error('Please fill in all required fields including time slot');
+    setAttemptedSubmit(true);
+    const missing: string[] = [];
+    if (!isAuthenticated) missing.push('Sign in');
+    if (!selectedDoctor) missing.push('Select staff');
+    if (!date) missing.push('Select date');
+    if (!selectedTimeSlot) missing.push('Select time slot');
+    if (missing.length) {
+      toast.error(`Missing: ${missing.join(', ')}`);
       return;
     }
 
     setIsLoading(true);
     try {
-      const appointmentDate = new Date(date);
+      const appointmentDate = new Date((date as Date).getTime());
       const [hours, minutes] = selectedTimeSlot.split(':').map(Number);
       appointmentDate.setHours(hours, minutes, 0, 0);
 
       await createAppointment({
-        patientId: currentUser._id,
-        staffProfileId: selectedDoctor as Id<"staff_profiles">,
+        patientId: currentUser!._id,
+        staffProfileId: selectedDoctor as Id<'staff_profiles'>,
         appointmentDate: appointmentDate.getTime(),
         duration: 30,
         appointmentType: appointmentType as any,
         reason: reason || undefined,
-        createdById: currentUser._id,
+        createdById: currentUser!._id,
       });
 
       toast.success('Appointment booked successfully!');
@@ -167,9 +191,11 @@ export default function AppointmentsPage() {
       setPreferredTime('');
       setReason('');
       setDate(new Date());
-    } catch (error) {
+      setAttemptedSubmit(false);
+    } catch (error: any) {
       console.error('Error booking appointment:', error);
-      toast.error('Failed to book appointment. Please try again.');
+      const message = typeof error?.message === 'string' ? error.message : 'Failed to book appointment. Please try again.';
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -439,12 +465,12 @@ export default function AppointmentsPage() {
               {showBookingForm ? (
               <div className="space-y-4">
 
-                  {/* Doctor Selection - inside booking form */}
+                  {/* Staff Selection - inside booking form */}
                   <div className="grid gap-2">
-                    <Label htmlFor="doctor-select">Select Doctor</Label>
+                    <Label htmlFor="doctor-select">Select Staff</Label>
                     <select
                       id="doctor-select"
-                      className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+                      className={`w-full h-10 rounded-md border bg-background px-3 py-2 text-sm text-foreground ${attemptedSubmit && !selectedDoctor ? 'border-red-500' : 'border-input'}`}
                       value={selectedDoctor}
                       onChange={(e) => {
                         setSelectedDoctor(e.target.value);
@@ -452,13 +478,33 @@ export default function AppointmentsPage() {
                         setPreferredTime(''); // Reset preferred time when doctor changes
                       }}
                     >
-                      <option value="">Select a doctor</option>
+                      <option value="">Select staff</option>
                       {availableDoctors?.map(doctor => (
                         <option key={doctor.staffProfile._id} value={doctor.staffProfile._id}>
-                          Dr. {doctor.user.firstName} {doctor.user.lastName} - {doctor.staffProfile.specialty || 'General Practice'}
+                          {doctor.staffProfile.role === 'doctor' ? 'Dr. ' : ''}{doctor.user.firstName} {doctor.user.lastName} - {doctor.staffProfile.specialty || doctor.staffProfile.subRole || 'General Practice'}
                         </option>
                       ))}
                     </select>
+                    {attemptedSubmit && !selectedDoctor && (
+                      <span className="text-xs text-red-600">Please select a staff member.</span>
+                    )}
+                    {selectedDoctorUser && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <img
+                          src={selectedStaffProfile?.profileImage || selectedDoctorUser.imageUrl || '/logo.png'}
+                          alt={`${selectedDoctorUser.firstName ?? ''} ${selectedDoctorUser.lastName ?? ''}`.trim() || 'Staff'}
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                        <div className="text-sm text-foreground">
+                          <span className="font-medium">
+                            {selectedStaffProfile?.role === 'doctor' ? 'Dr. ' : ''}{selectedDoctorUser.firstName} {selectedDoctorUser.lastName}
+                          </span>
+                          {selectedStaffProfile?.specialty && (
+                            <span className="ml-2 text-muted-foreground">{selectedStaffProfile.specialty}</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Time Slot Selection - inside booking form */}
@@ -550,21 +596,8 @@ export default function AppointmentsPage() {
                           })()}
                         </div>
                       )}
-                      
-                      {availableTimeSlots && availableTimeSlots.length > 0 && (
-                        <div className="text-sm text-muted-foreground text-center mt-2">
-                          {(() => {
-                            const generatedSlotsCount = availableTimeSlots
-                              .filter(slot => slot.isAvailable !== false)
-                              .reduce((total, slot) => {
-                                const slotStartTime = timeStringToMinutes(slot.startTime);
-                                const slotEndTime = timeStringToMinutes(slot.endTime);
-                                const slotsInRange = Math.floor((slotEndTime - slotStartTime) / 30);
-                                return total + slotsInRange;
-                              }, 0);
-                            return `Showing ${generatedSlotsCount} available time slots`;
-                          })()}
-                        </div>
+                      {attemptedSubmit && !selectedTimeSlot && (
+                        <span className="text-xs text-red-600">Please select a time slot.</span>
                       )}
                     </div>
                   )}
@@ -637,6 +670,9 @@ export default function AppointmentsPage() {
                     </div>
                   )}
                 
+                {!isAuthenticated && (
+                  <div className="text-sm text-red-600 mb-2">Please sign in to book an appointment.</div>
+                )}
                 {isLoading ? (
                   <div className="flex justify-center py-2">
                       <Loader size="sm" text="Booking appointment..." />
@@ -645,12 +681,12 @@ export default function AppointmentsPage() {
                   <Button 
                     className="w-full btn-primary"
                       onClick={handleBookAppointment}
-                      disabled={!selectedDoctor || !date || !selectedTimeSlot}
+                      disabled={!canSubmit}
                     >
                       <User className="w-4 h-4 mr-2" />
-                      Book Appointment
+                      {isAuthenticated ? 'Book Appointment' : 'Sign in to Book'}
                     </Button>
-                  )}
+                )}
                 </div>
               ) : (
                 <div className="text-center py-8">

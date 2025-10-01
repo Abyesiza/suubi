@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import Lifeline from '@/components/ui/Lifeline';
 import { ArrowRight, Heart, Users, GraduationCap, Baby, PersonStanding, Brain, BookOpen, Leaf, Stethoscope, School } from 'lucide-react';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
 // Animation variants
 const fadeIn = {
@@ -83,65 +85,216 @@ const corePrograms = [
 ];
 
 export default function AboutPage() {
+  // Fetch verified staff members with their profile images
+  const staffMembers = useQuery(api.staffProfiles.listStaffWithUsers, {});
+  
+  // Filter for verified staff and limit to 4 for the hero section
+  const verifiedStaff = staffMembers?.filter(staff => staff.staffProfile.verified) || [];
+  const heroStaff = verifiedStaff.slice(0, 4);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-[#F5F7F9] to-white pt-24 pb-8 md:pb-12">
-        <div className="absolute top-0 left-0 right-0 h-8">
-          <Lifeline color="#E1AD01" height="12px" variant="thin" className="opacity-30" />
-        </div>
+      <section className="relative bg-gradient-to-b from-[#F5F7F9] to-white pt-32 pb-12 md:pb-16">
+        {/* Decorative background elements */}
+        <div className="absolute top-20 right-10 w-72 h-72 bg-[#2E8B57]/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 left-10 w-96 h-96 bg-[#F7941D]/5 rounded-full blur-3xl"></div>
         
         <div className="container-custom relative z-10">
           <motion.div
             initial="hidden"
             animate="visible"
             variants={staggerChildren}
-            className="grid md:grid-cols-2 gap-8 md:gap-12 items-center"
+            className="text-center max-w-4xl mx-auto"
           >
-            <motion.div variants={fadeIn} className="max-w-xl">
-              <h1 className="text-4xl font-bold mb-4 text-dark-purple">About Suubi Healthcare</h1>
-              <div className="w-32 h-6 mb-4 md:mb-6">
-                <Lifeline color="#E1AD01" height="12px" variant="minimal" />
-              </div>
-              <p className="text-dark-purple/80 mb-4 md:mb-6">
-                Suubi Healthcare is an initiative of the Boost Health Initiative (BHI), a non-profit organization dedicated to improving healthcare access and outcomes for marginalized communities in Uganda, with a special focus on women and children.
+            <motion.h1 variants={fadeIn} className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 text-dark-purple">
+              About{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2E8B57] to-[#1E6F47]">
+                Suubi Healthcare
+              </span>
+            </motion.h1>
+
+            <motion.div variants={fadeIn} className="w-32 h-1 bg-gradient-to-r from-[#F7941D] to-[#E1AD01] mx-auto mb-8 rounded-full"></motion.div>
+
+            <motion.p variants={fadeIn} className="text-lg sm:text-xl lg:text-2xl text-dark-purple/80 mb-8 leading-relaxed max-w-3xl mx-auto">
+              Suubi Healthcare is an initiative of the Boost Health Initiative (BHI), a non-profit organization dedicated to improving healthcare access and outcomes for marginalized communities in Uganda, with a special focus on women and children.
+            </motion.p>
+
+            <motion.p variants={fadeIn} className="text-base sm:text-lg text-dark-purple/70 mb-10 leading-relaxed max-w-3xl mx-auto">
+              By combining medical expertise, community engagement, and sustainable development practices, we strive to create lasting positive change in the health landscape of underserved populations.
+            </motion.p>
+
+            {/* Healthcare Team Preview */}
+            <motion.div variants={fadeIn} className="mb-10">
+              <h3 className="text-xl font-semibold text-dark-purple mb-6">Meet Our Healthcare Team</h3>
+              {heroStaff.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+                  {heroStaff.map((staff, index) => {
+                    // Get gradient colors based on role
+                    const getGradientColor = (role: string) => {
+                      switch (role) {
+                        case 'doctor': return 'from-[#2E8B57]/20 to-[#2E8B57]/5';
+                        case 'nurse': return 'from-[#F7941D]/20 to-[#F7941D]/5';
+                        case 'allied_health': return 'from-[#1E3A5F]/20 to-[#1E3A5F]/5';
+                        default: return 'from-[#2E8B57]/20 to-[#2E8B57]/5';
+                      }
+                    };
+
+                    // Get role display name
+                    const getRoleDisplayName = (role: string, subRole?: string) => {
+                      switch (role) {
+                        case 'doctor': return subRole || 'Doctor';
+                        case 'nurse': return subRole || 'Nurse';
+                        case 'allied_health': return subRole || 'Specialist';
+                        default: return role.charAt(0).toUpperCase() + role.slice(1).replace('_', ' ');
+                      }
+                    };
+
+                    const profileImage = staff.staffProfile.profileImage || staff.user.imageUrl || '/img/placeholder-doctor.png';
+                    const fullName = `${staff.user.firstName || ''} ${staff.user.lastName || ''}`.trim() || 'Team Member';
+                    
+                    return (
+                      <motion.div
+                        key={staff.staffProfile._id}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.5, delay: 0.2 + (index * 0.1) }}
+                        className="relative group"
+                      >
+                        <div className={`absolute -inset-1 bg-gradient-to-br ${getGradientColor(staff.staffProfile.role)} rounded-xl blur-lg group-hover:blur-xl transition-all duration-300`}></div>
+                        <div className="relative overflow-hidden rounded-xl shadow-lg transform group-hover:scale-105 transition-transform duration-300">
+                          <Image
+                            src={profileImage}
+                            alt={fullName}
+                            width={120}
+                            height={150}
+                            className="w-full h-[120px] object-cover"
+                            onError={(e) => {
+                              // Fallback to placeholder if image fails to load
+                              e.currentTarget.src = '/img/placeholder-doctor.png';
+                            }}
+                          />
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-2">
+                            <span className="text-white font-semibold text-xs">
+                              {getRoleDisplayName(staff.staffProfile.role, staff.staffProfile.subRole)}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              ) : (
+                // Fallback to static images if no staff data is available
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+                  {/* Doctor */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                    className="relative group"
+                  >
+                    <div className="absolute -inset-1 bg-gradient-to-br from-[#2E8B57]/20 to-[#2E8B57]/5 rounded-xl blur-lg group-hover:blur-xl transition-all duration-300"></div>
+                    <div className="relative overflow-hidden rounded-xl shadow-lg transform group-hover:scale-105 transition-transform duration-300">
+                      <Image
+                        src="/img/dr2.png"
+                        alt="Doctor"
+                        width={120}
+                        height={150}
+                        className="w-full h-[120px] object-cover"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-2">
+                        <span className="text-white font-semibold text-xs">Doctor</span>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  {/* Specialist */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                    className="relative group"
+                  >
+                    <div className="absolute -inset-1 bg-gradient-to-br from-[#F7941D]/20 to-[#F7941D]/5 rounded-xl blur-lg group-hover:blur-xl transition-all duration-300"></div>
+                    <div className="relative overflow-hidden rounded-xl shadow-lg transform group-hover:scale-105 transition-transform duration-300">
+                      <Image
+                        src="/img/dr3.png"
+                        alt="Specialist"
+                        width={120}
+                        height={150}
+                        className="w-full h-[120px] object-cover"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-2">
+                        <span className="text-white font-semibold text-xs">Specialist</span>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  {/* Nurse 1 */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.4 }}
+                    className="relative group"
+                  >
+                    <div className="absolute -inset-1 bg-gradient-to-br from-[#2E8B57]/20 to-[#2E8B57]/5 rounded-xl blur-lg group-hover:blur-xl transition-all duration-300"></div>
+                    <div className="relative overflow-hidden rounded-xl shadow-lg transform group-hover:scale-105 transition-transform duration-300">
+                      <Image
+                        src="/img/dr5.png"
+                        alt="Nurse"
+                        width={120}
+                        height={150}
+                        className="w-full h-[120px] object-cover"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-2">
+                        <span className="text-white font-semibold text-xs">Nurse</span>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  {/* Nurse 2 */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.5 }}
+                    className="relative group"
+                  >
+                    <div className="absolute -inset-1 bg-gradient-to-br from-[#1E3A5F]/20 to-[#1E3A5F]/5 rounded-xl blur-lg group-hover:blur-xl transition-all duration-300"></div>
+                    <div className="relative overflow-hidden rounded-xl shadow-lg transform group-hover:scale-105 transition-transform duration-300">
+                      <Image
+                        src="/img/dr6.png"
+                        alt="Nurse"
+                        width={120}
+                        height={150}
+                        className="w-full h-[120px] object-cover"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-2">
+                        <span className="text-white font-semibold text-xs">Nurse</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+              <p className="text-sm text-dark-purple/70 mt-4 font-medium">
+                Our dedicated healthcare professionals serving communities across Uganda
               </p>
-              <p className="text-dark-purple/80 mb-6 md:mb-8">
-                By combining medical expertise, community engagement, and sustainable development practices, we strive to create lasting positive change in the health landscape of underserved populations.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <Button asChild className="bg-mustard hover:bg-suubi-green text-dark-purple hover:text-white group">
-                  <Link href="/donate">
-                    Support Our Mission <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" className="border-mustard text-dark-purple hover:bg-mustard/10">
-                  <Link href="/contact">
-                    Contact Us
-                  </Link>
-                </Button>
-              </div>
             </motion.div>
-            
-            <motion.div variants={fadeIn} className="relative rounded-lg overflow-hidden shadow-xl h-[400px]">
-              <Image
-                src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=800&h=600"
-                alt="Healthcare workers in Uganda"
-                fill
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-dark-purple/10"></div>
-              
-              {/* Lifeline overlay */}
-              <div className="absolute left-0 top-0 bottom-0 w-4">
-                <Lifeline color="#E1AD01" height="12px" variant="default" className="h-full opacity-60" />
-              </div>
+
+            {/* CTA Buttons */}
+            <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button asChild className="bg-gradient-to-r from-[#F7941D] to-[#FF8C00] text-white hover:from-[#FF8C00] hover:to-[#F7941D] transition-all px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-2xl transform hover:scale-105 duration-200 hover:-translate-y-1 group">
+                <Link href="/donate">
+                  Support Our Mission <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="border-2 border-dark-purple/20 text-dark-purple hover:border-dark-purple hover:bg-dark-purple/5 transition-all px-8 py-4 rounded-xl font-semibold text-lg backdrop-blur-sm">
+                <Link href="/contact">
+                  Contact Us
+                </Link>
+              </Button>
             </motion.div>
           </motion.div>
-        </div>
-        
-        <div className="absolute bottom-0 left-0 right-0 h-8">
-          <Lifeline color="#E1AD01" height="12px" variant="thin" className="opacity-30 transform rotate-180" />
         </div>
       </section>
       
@@ -249,20 +402,176 @@ export default function AboutPage() {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="md:col-span-5 order-1 md:order-2"
             >
-              <div className="relative h-[400px] rounded-lg overflow-hidden shadow-lg">
-                <Image
-                  src="https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?q=80&w=600&h=800"
-                  alt="Healthcare in Uganda"
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-dark-purple/10"></div>
-                
-                {/* Lifeline overlay */}
-                <div className="absolute right-0 top-0 bottom-0 w-4">
-                  <Lifeline color="#E1AD01" height="12px" variant="default" className="h-full opacity-60" />
+              {/* Healthcare Team Collage */}
+              {verifiedStaff.length > 0 ? (
+                <div className="grid grid-cols-2 gap-4">
+                  {verifiedStaff.slice(0, 4).map((staff, index) => {
+                    // Get gradient colors based on role
+                    const getGradientColor = (role: string) => {
+                      switch (role) {
+                        case 'doctor': return 'from-[#2E8B57]/20 to-[#2E8B57]/5';
+                        case 'nurse': return 'from-[#F7941D]/20 to-[#F7941D]/5';
+                        case 'allied_health': return 'from-[#1E3A5F]/20 to-[#1E3A5F]/5';
+                        default: return 'from-[#2E8B57]/20 to-[#2E8B57]/5';
+                      }
+                    };
+
+                    // Get role display name
+                    const getRoleDisplayName = (role: string, subRole?: string) => {
+                      switch (role) {
+                        case 'doctor': return subRole || 'Doctor';
+                        case 'nurse': return subRole || 'Nurse';
+                        case 'allied_health': return subRole || 'Specialist';
+                        default: return role.charAt(0).toUpperCase() + role.slice(1).replace('_', ' ');
+                      }
+                    };
+
+                    const profileImage = staff.staffProfile.profileImage || staff.user.imageUrl || '/img/placeholder-doctor.png';
+                    const fullName = `${staff.user.firstName || ''} ${staff.user.lastName || ''}`.trim() || 'Team Member';
+                    const isTopRow = index < 2;
+                    const isLeftColumn = index % 2 === 0;
+                    
+                    return (
+                      <motion.div
+                        key={staff.staffProfile._id}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5, delay: 0.3 + (index * 0.1) }}
+                        className={`relative group ${isTopRow && !isLeftColumn ? 'mt-4' : ''} ${!isTopRow && isLeftColumn ? '-mt-4' : ''}`}
+                      >
+                        <div className={`absolute -inset-1 bg-gradient-to-br ${getGradientColor(staff.staffProfile.role)} rounded-xl blur-lg group-hover:blur-xl transition-all duration-300`}></div>
+                        <div className="relative overflow-hidden rounded-xl shadow-lg transform group-hover:scale-105 transition-transform duration-300">
+                          <Image
+                            src={profileImage}
+                            alt={fullName}
+                            width={200}
+                            height={250}
+                            className="w-full h-[180px] object-cover"
+                            onError={(e) => {
+                              // Fallback to placeholder if image fails to load
+                              e.currentTarget.src = '/img/placeholder-doctor.png';
+                            }}
+                          />
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-3">
+                            <span className="text-white font-semibold text-sm">
+                              {getRoleDisplayName(staff.staffProfile.role, staff.staffProfile.subRole)}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
                 </div>
-              </div>
+              ) : (
+                // Fallback to static images if no staff data is available
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Doctor - Top Left */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                    className="relative group"
+                  >
+                    <div className="absolute -inset-1 bg-gradient-to-br from-[#2E8B57]/20 to-[#2E8B57]/5 rounded-xl blur-lg group-hover:blur-xl transition-all duration-300"></div>
+                    <div className="relative overflow-hidden rounded-xl shadow-lg transform group-hover:scale-105 transition-transform duration-300">
+                      <Image
+                        src="/img/dr2.png"
+                        alt="Doctor"
+                        width={200}
+                        height={250}
+                        className="w-full h-[180px] object-cover"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-3">
+                        <span className="text-white font-semibold text-sm">Doctor</span>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  {/* Specialist - Top Right */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: 0.4 }}
+                    className="relative group mt-4"
+                  >
+                    <div className="absolute -inset-1 bg-gradient-to-br from-[#F7941D]/20 to-[#F7941D]/5 rounded-xl blur-lg group-hover:blur-xl transition-all duration-300"></div>
+                    <div className="relative overflow-hidden rounded-xl shadow-lg transform group-hover:scale-105 transition-transform duration-300">
+                      <Image
+                        src="/img/dr3.png"
+                        alt="Specialist"
+                        width={200}
+                        height={250}
+                        className="w-full h-[180px] object-cover"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-3">
+                        <span className="text-white font-semibold text-sm">Specialist</span>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  {/* Nurse 1 - Bottom Left */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: 0.5 }}
+                    className="relative group -mt-4"
+                  >
+                    <div className="absolute -inset-1 bg-gradient-to-br from-[#2E8B57]/20 to-[#2E8B57]/5 rounded-xl blur-lg group-hover:blur-xl transition-all duration-300"></div>
+                    <div className="relative overflow-hidden rounded-xl shadow-lg transform group-hover:scale-105 transition-transform duration-300">
+                      <Image
+                        src="/img/dr5.png"
+                        alt="Nurse"
+                        width={200}
+                        height={250}
+                        className="w-full h-[180px] object-cover"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-3">
+                        <span className="text-white font-semibold text-sm">Nurse</span>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  {/* Nurse 2 - Bottom Right */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: 0.6 }}
+                    className="relative group"
+                  >
+                    <div className="absolute -inset-1 bg-gradient-to-br from-[#1E3A5F]/20 to-[#1E3A5F]/5 rounded-xl blur-lg group-hover:blur-xl transition-all duration-300"></div>
+                    <div className="relative overflow-hidden rounded-xl shadow-lg transform group-hover:scale-105 transition-transform duration-300">
+                      <Image
+                        src="/img/dr6.png"
+                        alt="Nurse"
+                        width={200}
+                        height={250}
+                        className="w-full h-[180px] object-cover"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-3">
+                        <span className="text-white font-semibold text-sm">Nurse</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+              
+              {/* Team caption */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.7 }}
+                className="mt-6 text-center"
+              >
+                <p className="text-dark-purple/70 text-sm font-medium">
+                  Our dedicated healthcare team serving communities across Uganda
+                </p>
+              </motion.div>
             </motion.div>
           </div>
         </div>

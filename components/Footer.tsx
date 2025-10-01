@@ -83,7 +83,7 @@ export default function Footer() {
             <ul className="space-y-4">
               <li className="flex items-center space-x-3">
                 <Phone className="h-5 w-5 text-[rgb(var(--primary-600))]" />
-                <span className="text-gray-600">+256 700 123 456</span>
+                <span className="text-gray-600">+256 772 670 744</span>
               </li>
               <li className="flex items-center space-x-3">
                 <Mail className="h-5 w-5 text-[rgb(var(--primary-600))]" />
@@ -92,8 +92,9 @@ export default function Footer() {
               <li className="flex items-start space-x-3">
                 <MapPin className="h-5 w-5 text-[rgb(var(--primary-600))]" />
                 <span className="text-gray-600">
-                  Plot 123, Kampala Road<br />
-                  Kampala, Uganda
+                  Level 1 Ssebowa House<br />
+                  Plot 1 Ssekajja Road, Kayunga Central<br />
+                  Kayunga, Uganda
                 </span>
               </li>
             </ul>

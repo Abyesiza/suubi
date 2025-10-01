@@ -1,40 +1,27 @@
 'use client';
 
-import { HoverBorderGradient } from '@/components/ui/HoverBorderGradient';
 import Link from 'next/link';
 import Image from 'next/image';
-import Lifeline from '@/components/ui/Lifeline';
 import { motion } from 'framer-motion';
-import { Users, Activity, GraduationCap, ArrowRight, ArrowUpRight } from 'lucide-react';
-import { CardContainer, CardBody, CardItem } from '@/components/ui/3d-card';
+import { Calendar, ArrowRight, Shield } from 'lucide-react';
 
 export default function HeroSection() {
   const container = {
-    hidden: { opacity: 0, y: 16 },
+    hidden: { opacity: 0, y: 20 },
     show: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.5, ease: 'easeOut', staggerChildren: 0.08, delayChildren: 0.1 }
+      transition: { duration: 0.6, ease: 'easeOut', staggerChildren: 0.1, delayChildren: 0.2 }
     }
   } as const;
 
   const item = {
-    hidden: { opacity: 0, y: 16 },
+    hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } }
   } as const;
 
-  const statsContainer = {
-    hidden: {},
-    show: { transition: { staggerChildren: 0.08 } }
-  } as const;
-
-  const statItem = {
-    hidden: { opacity: 0, y: 8 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } }
-  } as const;
-
   return (
-    <section className="relative bg-gradient-to-br from-background via-light-gray to-teal-tint/20 text-dark-purple overflow-hidden">
+    <section className="relative bg-gradient-to-br from-white via-[#F5F7F9] to-[#E8F5E9]/30 text-dark-purple overflow-hidden">
       {/* Wavy bottom edge */}
       <div className="absolute bottom-0 left-0 right-0">
         <svg
@@ -59,113 +46,52 @@ export default function HeroSection() {
         </svg>
       </div>
 
-      <div className="container-custom relative z-20 pt-32 md:pt-36 lg:pt-40 pb-8 md:pb-12">
-        <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
-          {/* Left side - Main content */}
-          <motion.div variants={container} initial="hidden" animate="show" className="max-w-2xl order-2 lg:order-1">
-            <motion.h1 variants={item} className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 md:mb-6 leading-tight text-dark-purple text-center lg:text-left">
-              Discover the Comprehensive Care You Deserve
-            </motion.h1>
+      {/* Decorative background shapes */}
+      <div className="absolute top-20 right-10 w-72 h-72 bg-[#2E8B57]/5 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-20 left-10 w-96 h-96 bg-[#F7941D]/5 rounded-full blur-3xl"></div>
 
-            <motion.p variants={item} className="text-base md:text-lg lg:text-xl text-dark-purple/80 mb-6 md:mb-8 leading-relaxed text-center lg:text-left">
-              Our healthcare center is designed to help you find the right healthcare solution for you and your family, all in one convenient location.
-            </motion.p>
-
-            <motion.div variants={item} className="flex flex-wrap gap-4 mb-6 md:mb-8 justify-center lg:justify-start">
-              <Link href="/appointments" aria-label="Book an appointment">
-                <button className="bg-mustard text-white hover:bg-orange-600 transition-colors px-6 md:px-8 py-3 md:py-4 rounded-lg font-semibold text-base md:text-lg flex items-center gap-2">
-                  Book Appointment
-                  <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
-                </button>
-              </Link>
+      <div className="container-custom relative z-20 pt-32 sm:pt-40 lg:pt-48 pb-16 sm:pb-20 lg:pb-24">
+        <div className="max-w-4xl mx-auto text-center">
+          {/* Main content */}
+          <motion.div 
+            variants={container} 
+            initial="hidden" 
+            animate="show"
+          >
+            {/* Trust Badge */}
+            <motion.div variants={item} className="flex items-center gap-2 mb-6 justify-center">
+              <div className="flex items-center gap-2 bg-gradient-to-r from-[#2E8B57]/10 to-[#2E8B57]/5 px-4 py-2 rounded-full border border-[#2E8B57]/20">
+                <Shield className="h-4 w-4 text-[#2E8B57]" />
+                <span className="text-sm font-medium text-[#2E8B57]">Trusted by Kayunga Community Members, Doctors & Staff</span>
+              </div>
             </motion.div>
 
-          </motion.div>
+            <motion.h1 variants={item} className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 lg:mb-8 leading-[1.1] text-dark-purple">
+              Bringing{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2E8B57] to-[#1E6F47]">
+                Hope Through Healthcare
+              </span>
+              {' '}to Uganda
+            </motion.h1>
 
-          {/* Right side - Healthcare Team Images with background shape */}
-          <motion.div variants={statsContainer} className="relative order-1 lg:order-2 mb-8 lg:mb-0">
-            <motion.div variants={statItem} className="relative">
-              {/* Background blob shape */}
-              <div className="absolute inset-0 bg-light-gray/80 rounded-full transform scale-110 md:scale-125 lg:scale-150 blur-sm"></div>
-              <div className="relative bg-white rounded-full p-4 md:p-6 lg:p-8 transform scale-100 md:scale-110 lg:scale-125 shadow-lg">
-                {/* Healthcare Team Images Container */}
-                <div className="w-full h-60 md:h-72 lg:h-80 relative flex items-center justify-center">
-                  {/* Doctor (dr2.png) */}
-                  <div className="absolute left-2 md:left-4 top-4 md:top-8 transform -rotate-6 md:-rotate-12">
-                    <div className="relative">
-                      <Image 
-                        src="/img/dr2.png" 
-                        alt="Doctor" 
-                        width={80}
-                        height={120}
-                        className="md:w-[100px] md:h-[140px] lg:w-[120px] lg:h-[160px] rounded-lg shadow-lg"
-                      />
-                      {/* Doctor label overlay */}
-                      <div className="absolute -bottom-1 md:-bottom-2 -right-1 md:-right-2 bg-suubi-green text-white px-2 md:px-3 py-1 rounded-full text-xs font-medium shadow-md">
-                        Doctor
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Specialist (dr3.png) */}
-                  <div className="absolute right-2 md:right-4 top-4 md:top-8 transform rotate-6 md:rotate-12">
-                    <div className="relative">
-                      <Image 
-                        src="/img/dr3.png" 
-                        alt="Specialist" 
-                        width={80}
-                        height={120}
-                        className="md:w-[100px] md:h-[140px] lg:w-[120px] lg:h-[160px] rounded-lg shadow-lg"
-                      />
-                      {/* Specialist label overlay */}
-                      <div className="absolute -bottom-1 md:-bottom-2 -right-1 md:-right-2 bg-mustard text-white px-3 py-1 rounded-full text-xs font-medium shadow-md">
-                        Specialist
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Nurse 1 (dr5.png) */}
-                  <div className="absolute left-4 md:left-8 bottom-4 md:bottom-8 transform -rotate-3 md:-rotate-6">
-                    <div className="relative">
-                      <Image 
-                        src="/img/dr5.png" 
-                        alt="Nurse" 
-                        width={70}
-                        height={100}
-                        className="md:w-[80px] md:h-[110px] lg:w-[100px] lg:h-[140px] rounded-lg shadow-lg"
-                      />
-                      {/* Nurse label overlay */}
-                      <div className="absolute -bottom-1 md:-bottom-2 -right-1 md:-right-2 bg-suubi-green text-white px-2 md:px-3 py-1 rounded-full text-xs font-medium shadow-md">
-                        Nurse
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Nurse 2 (dr6.png) */}
-                  <div className="absolute right-4 md:right-8 bottom-4 md:bottom-8 transform rotate-3 md:rotate-6">
-                    <div className="relative">
-                      <Image 
-                        src="/img/dr6.png" 
-                        alt="Nurse" 
-                        width={70}
-                        height={100}
-                        className="md:w-[80px] md:h-[110px] lg:w-[100px] lg:h-[140px] rounded-lg shadow-lg"
-                      />
-                      {/* Nurse label overlay */}
-                      <div className="absolute -bottom-1 md:-bottom-2 -right-1 md:-right-2 bg-suubi-green text-white px-2 md:px-3 py-1 rounded-full text-xs font-medium shadow-md">
-                        Nurse
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Center text */}
-                  <div className="text-center text-dark-purple z-10">
-                    <Users className="h-12 w-12 md:h-14 md:w-14 lg:h-16 lg:w-16 mx-auto mb-2 md:mb-3 text-suubi-green" />
-                    <p className="text-base md:text-lg font-semibold">Healthcare Team</p>
-                    <p className="text-xs md:text-sm text-dark-purple/70">Ready to serve you</p>
-                  </div>
-                </div>
-              </div>
+            <motion.p variants={item} className="text-lg sm:text-xl lg:text-2xl text-dark-purple/70 mb-8 lg:mb-10 leading-relaxed max-w-3xl mx-auto">
+              Suubi Healthcare, an initiative of Boost Health Initiative (BHI), provides quality healthcare access to marginalized communities across Uganda, with special focus on women and children.
+            </motion.p>
+
+            {/* CTA Buttons */}
+            <motion.div variants={item} className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/appointments" aria-label="Book an appointment" className="w-full sm:w-auto group">
+                <button className="w-full sm:w-auto bg-gradient-to-r from-[#F7941D] to-[#FF8C00] text-white hover:from-[#FF8C00] hover:to-[#F7941D] transition-all px-8 py-4 rounded-xl font-semibold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-2xl transform hover:scale-105 duration-200 hover:-translate-y-1">
+                  <Calendar className="h-5 w-5" />
+                  Book Appointment
+                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </Link>
+              <Link href="/about" aria-label="Learn more about us" className="w-full sm:w-auto">
+                <button className="w-full sm:w-auto border-2 border-dark-purple/20 text-dark-purple hover:border-dark-purple hover:bg-dark-purple/5 transition-all px-8 py-4 rounded-xl font-semibold text-lg backdrop-blur-sm">
+                  Learn More
+                </button>
+              </Link>
             </motion.div>
           </motion.div>
         </div>

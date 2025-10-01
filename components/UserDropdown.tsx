@@ -11,24 +11,38 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { SignOutButton } from '@clerk/nextjs'
+import { SignOutButton, useUser } from '@clerk/nextjs'
 import { LogOut } from 'lucide-react'
 
 export default function UserDropdown() {
-  const user = useQuery(api.users.getCurrentUser, {})
+  const { user: clerkUser } = useUser()
+  const clerkId = clerkUser?.id
 
-  const displayName = user
-    ? user.firstName || user.lastName
-      ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim()
-      : user.email
-    : 'Account'
+  const dbUser = useQuery(
+    api.users.getCurrentUser,
+    clerkId ? { clerkId } : undefined
+  )
+
+  const displayNameFromDb = dbUser
+    ? dbUser.firstName || dbUser.lastName
+      ? `${dbUser.firstName ?? ''} ${dbUser.lastName ?? ''}`.trim()
+      : dbUser.email
+    : undefined
+
+  const displayName =
+    displayNameFromDb ??
+    clerkUser?.fullName ??
+    clerkUser?.primaryEmailAddress?.emailAddress ??
+    'Account'
+
+  const avatarUrl = dbUser?.imageUrl || clerkUser?.imageUrl || null
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="flex items-center gap-2 px-3 py-2">
-          {user?.imageUrl ? (
-            <img src={user.imageUrl} alt={displayName} className="w-8 h-8 rounded-full object-cover" />
+          {avatarUrl ? (
+            <img src={avatarUrl} alt={displayName} className="w-8 h-8 rounded-full object-cover" />
           ) : (
             <div className="w-8 h-8 rounded-full bg-mustard text-dark-purple flex items-center justify-center text-sm font-semibold">
               {displayName?.charAt(0)?.toUpperCase()}
@@ -38,7 +52,23 @@ export default function UserDropdown() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+        <DropdownMenuLabel>
+          <div className="flex items-center gap-2">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={displayName} className="w-8 h-8 rounded-full object-cover" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-mustard text-dark-purple flex items-center justify-center text-sm font-semibold">
+                {displayName?.charAt(0)?.toUpperCase()}
+              </div>
+            )}
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">{displayName}</span>
+              <span className="text-xs text-muted-foreground">
+                {dbUser?.email ?? clerkUser?.primaryEmailAddress?.emailAddress ?? ''}
+              </span>
+            </div>
+          </div>
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {/* Add extra items as needed, e.g., Profile/Settings */}
         <DropdownMenuSeparator />
