@@ -20,7 +20,7 @@ export default function UserDropdown() {
 
   const dbUser = useQuery(
     api.users.getCurrentUser,
-    clerkId ? { clerkId } : undefined
+    clerkId ? { clerkId } : "skip"
   )
 
   const displayNameFromDb = dbUser

@@ -186,7 +186,7 @@ export const listStaffUsers = query({
     // Get user data for each staff profile
     const staffUsers = await Promise.all(
       uniqueProfiles.map(async (profile) => {
-        const user = await ctx.db.get(profile.userId);
+        const user = await ctx.db.get(profile.userId) as any;
         if (!user) {
           throw new Error(`User not found for staff profile ${profile._id}`);
         }
