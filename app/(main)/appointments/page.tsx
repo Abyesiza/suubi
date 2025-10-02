@@ -107,13 +107,41 @@ export default function AppointmentsPage() {
   const selectedStaff = availableDoctors?.find(doctor => doctor.staffProfile._id === selectedDoctor);
   const selectedDoctorUser = selectedStaff?.user;
   const selectedStaffProfile = selectedStaff?.staffProfile;
-  const availableTimeSlots = useQuery(
-    api.staffProfiles.getStaffAvailableTimes,
+  
+  // Get day of week for filtering recurring slots
+  const dayOfWeek = date ? 
+    ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()] : 
+    null;
+
+  // Get available time slots using new functions from availableTimes.ts
+  const recurringTimeSlots = useQuery(
+    api.availableTimes.getAvailableTimesByDayOfWeek,
+    selectedDoctorUser && dayOfWeek && showBookingForm ? {
+      userId: selectedDoctorUser._id,
+      dayOfWeek: dayOfWeek as any
+    } : "skip"
+  );
+
+  const specificDateTimeSlots = useQuery(
+    api.availableTimes.getAvailableTimesByDateFixed,
     selectedDoctorUser && date && showBookingForm ? {
-      staffUserId: selectedDoctorUser._id,
+      userId: selectedDoctorUser._id,
       date: date.getTime()
     } : "skip"
   );
+
+  // Combine existing appointments to avoid double booking
+  const staffExistingAppointments = useQuery(
+    api.availableTimes.getAvailableTimesByUserId,
+    selectedDoctorUser ? { userId: selectedDoctorUser._id } : "skip"
+  );
+
+  // Combine recurring and specific date slots
+  const availableTimeSlots = showBookingForm && selectedDoctorUser && date ? 
+    [
+      ...(recurringTimeSlots?.filter(slot => slot.isRecurring !== false && slot.isAvailable !== false) || []),
+      ...(specificDateTimeSlots?.filter(slot => slot.date !== undefined && slot.isAvailable !== false) || [])
+    ] : [];
   // Preselect staff profile from URL and open booking form
   useEffect(() => {
     const preselectId = searchParams.get('staffProfileId');
@@ -511,7 +539,7 @@ export default function AppointmentsPage() {
                   {selectedDoctor && date && (
                     <div className="grid gap-2">
                       <Label>Select Time Slot</Label>
-                      {!availableTimeSlots ? (
+                      {!recurringTimeSlots && !specificDateTimeSlots ? (
                         <div className="flex justify-center py-4">
                           <Loader size="sm" text="Loading available times..." />
                         </div>
@@ -528,7 +556,6 @@ export default function AppointmentsPage() {
                             const generatedSlots: Array<{startTime: string, endTime: string, isPreferred: boolean}> = [];
                             
                             availableTimeSlots
-                              .filter(slot => slot.isAvailable !== false)
                               .forEach(slot => {
                                 const slotStartTime = timeStringToMinutes(slot.startTime);
                                 const slotEndTime = timeStringToMinutes(slot.endTime);
