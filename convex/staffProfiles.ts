@@ -1056,6 +1056,101 @@ export const markNoShow = mutation({
 // ===== AVAILABLE TIMES MANAGEMENT =====
 
 /**
+ * Get staff member's available time slots
+ */
+export const getStaffAvailableTimes = query({
+  args: {
+    staffUserId: v.id("users"),
+    date: v.optional(v.number()), // Get slots for a specific date
+  },
+  returns: v.array(v.object({
+    _id: v.id("availableTimes"),
+    _creationTime: v.number(),
+    staffProfileId: v.optional(v.id("staff_profiles")), // Made optional to match schema
+    userId: v.optional(v.id("users")), // Legacy field
+    dayOfWeek: v.optional(v.union(
+      v.literal("Monday"),
+      v.literal("Tuesday"),
+      v.literal("Wednesday"),
+      v.literal("Thursday"),
+      v.literal("Friday"),
+      v.literal("Saturday"),
+      v.literal("Sunday")
+    )),
+    startTime: v.string(),
+    endTime: v.string(),
+    isRecurring: v.boolean(),
+    date: v.optional(v.number()),
+    isAvailable: v.optional(v.boolean()), // Added to match schema
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })),
+  handler: async (ctx, args) => {
+    // Get staff profile first
+    const staffProfile = await ctx.db
+      .query("staff_profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", args.staffUserId))
+      .first();
+
+    if (!staffProfile) {
+      throw new Error("Staff profile not found");
+    }
+
+    let availableTimes = await ctx.db
+      .query("availableTimes")
+      .withIndex("by_staffProfileId", (q) => q.eq("staffProfileId", staffProfile._id))
+      .collect();
+
+    // Filter by selected date if provided
+    if (args.date) {
+      const selectedDate = new Date(args.date);
+      // Normalize to local calendar day
+      const selectedYear = selectedDate.getFullYear();
+      const selectedMonth = selectedDate.getMonth();
+      const selectedDay = selectedDate.getDate();
+      const dayOfWeek = selectedDate.toLocaleDateString('en-US', { weekday: 'long' }) as
+        'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
+
+      availableTimes = availableTimes.filter((slot) => {
+        // Exclude explicitly unavailable slots
+        if (slot.isAvailable === false) return false;
+
+        // Recurring slots must match the selected day of week
+        if (slot.isRecurring && slot.dayOfWeek === dayOfWeek) {
+          return true;
+        }
+
+        // Specific-date slots must match the same calendar day
+        if (slot.date) {
+          const slotDate = new Date(slot.date);
+          return (
+            slotDate.getFullYear() === selectedYear &&
+            slotDate.getMonth() === selectedMonth &&
+            slotDate.getDate() === selectedDay
+          );
+        }
+
+        return false;
+      });
+    } else {
+      // When no date filter is provided, exclude explicitly unavailable slots
+      availableTimes = availableTimes.filter((slot) => slot.isAvailable !== false);
+    }
+
+    // Deduplicate identical time ranges (start-end) to avoid duplicates in UI
+    const seen: Record<string, boolean> = {};
+    const deduped = availableTimes.filter((slot) => {
+      const key = `${slot.startTime}-${slot.endTime}`;
+      if (seen[key]) return false;
+      seen[key] = true;
+      return true;
+    });
+
+    return deduped;
+  },
+});
+
+/**
  * Add available time slot for staff member
  */
 export const addAvailableTime = mutation({

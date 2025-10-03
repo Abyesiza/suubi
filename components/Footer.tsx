@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Heart, Phone, Mail, MapPin, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+import Image from 'next/image';
 
 const footerVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -38,8 +39,16 @@ export default function Footer() {
           {/* Company Info */}
           <motion.div variants={itemVariants} className="space-y-4">
             <Link href="/" className="flex items-center space-x-2 mb-6">
-              <Heart className="h-8 w-8 text-[rgb(var(--primary-600))]" />
-              <span className="text-2xl font-bold">Suubi Healthcare</span>
+            <div className="relative w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 flex-shrink-0">
+                <Image 
+                  src="/logo.png" 
+                  alt="Suubi Medical Centre" 
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
+              <span className="text-2xl font-bold">Suubi Medical Centre</span>
             </Link>
             <p className="text-gray-600">
               Providing quality healthcare services to our community with compassion and excellence.
