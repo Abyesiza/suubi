@@ -9,14 +9,8 @@ import { Avatar } from '@/components/ui/avatar';
 import { 
   Search, 
   Send, 
-  Phone, 
-  Video, 
-  Info, 
   Check, 
   CheckCheck, 
-  Image as ImageIcon,
-  Paperclip,
-  Smile
 } from 'lucide-react';
 import Lifeline from '@/components/ui/Lifeline';
 import { useQuery, useMutation } from 'convex/react';
@@ -30,11 +24,11 @@ export default function ChatPage() {
   const [selectedRoomId, setSelectedRoomId] = useState<Id<"rooms"> | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);  // Added isTyping state
   const [staffProfileId, setStaffProfileId] = useState<Id<"staff_profiles"> | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);  // Added typingTimeoutRef
 
   // Get current user from Convex
   const currentUser = useQuery(
@@ -205,8 +199,8 @@ export default function ChatPage() {
   const staffProfile = selectedRoom?.staffProfile;
   
   return (
-    <div className="min-h-screen pt-8 pb-12 bg-background">
-      <div className="container-custom h-[calc(100vh-180px)] max-h-[900px]">
+    <div className="min-h-screen pt-8 pb-12 bg-background flex flex-col">
+      <div className="container-custom flex-1 flex flex-col h-[calc(100vh-180px)] max-h-[900px]">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -219,7 +213,7 @@ export default function ChatPage() {
           </p>
         </motion.div>
         
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-full overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-full overflow-hidden flex-1">
           {/* Left Sidebar - Doctor List */}
           <Card className="p-4 border-[#73A580]/30 md:col-span-1 h-full overflow-hidden flex flex-col">
             <div className="relative mb-4">
@@ -348,17 +342,7 @@ export default function ChatPage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" className="text-dark-purple/70 hover:text-dark-purple">
-                      <Phone className="h-5 w-5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-dark-purple/70 hover:text-dark-purple">
-                      <Video className="h-5 w-5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-dark-purple/70 hover:text-dark-purple">
-                      <Info className="h-5 w-5" />
-                    </Button>
-                  </div>
+
                 </div>
             
                 {/* Messages Area */}
@@ -428,15 +412,7 @@ export default function ChatPage() {
                 {/* Message Input */}
                 <div className="p-3 border-t border-[#73A580]/30 bg-white">
                   <div className="flex gap-2 items-center">
-                    <Button variant="ghost" size="icon" className="text-dark-purple/70 hover:text-dark-purple">
-                      <Smile className="h-5 w-5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-dark-purple/70 hover:text-dark-purple">
-                      <Paperclip className="h-5 w-5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-dark-purple/70 hover:text-dark-purple">
-                      <ImageIcon className="h-5 w-5" />
-                    </Button>
+
                     <Input
                       placeholder="Type your message..."
                       className="flex-1 border-[#73A580]/30"
@@ -475,9 +451,10 @@ export default function ChatPage() {
             )}
           </Card>
         </div>
-        
-        {/* Important Notice */}
-        <div className="mt-6 bg-[#73A580]/20 rounded-xl p-4 text-sm text-dark-purple/80 relative overflow-hidden">
+      </div>
+      {/* Important Notice - moved outside container-custom to prevent entering the footer */}
+      <div className="container-custom">
+        <div className="mt-6 bg-[#73A580]/20 rounded-xl p-4 text-sm text-dark-purple/80 relative">
           <div className="absolute top-0 left-0 right-0 h-1">
             <Lifeline color="#E1AD01" height="6px" variant="thin" className="opacity-60" />
           </div>
