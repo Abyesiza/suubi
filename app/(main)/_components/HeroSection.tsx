@@ -58,13 +58,6 @@ export default function HeroSection() {
             initial="hidden" 
             animate="show"
           >
-            {/* Trust Badge */}
-            <motion.div variants={item} className="flex items-center gap-2 mb-6 justify-center">
-              <div className="flex items-center gap-2 bg-gradient-to-r from-[#2E8B57]/10 to-[#2E8B57]/5 px-4 py-2 rounded-full border border-[#2E8B57]/20">
-                <Shield className="h-4 w-4 text-[#2E8B57]" />
-                <span className="text-sm font-medium text-[#2E8B57]">Trusted by Kayunga Community Members, Doctors & Staff</span>
-              </div>
-            </motion.div>
 
             <motion.h1 variants={item} className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 lg:mb-8 leading-[1.1] text-dark-purple">
               Bringing{' '}
@@ -79,17 +72,26 @@ export default function HeroSection() {
             </motion.p>
 
             {/* CTA Buttons */}
-            <motion.div variants={item} className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/appointments" aria-label="Book an appointment" className="w-full sm:w-auto group">
-                <button className="w-full sm:w-auto bg-gradient-to-r from-[#F7941D] to-[#FF8C00] text-white hover:from-[#FF8C00] hover:to-[#F7941D] transition-all px-8 py-4 rounded-xl font-semibold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-2xl transform hover:scale-105 duration-200 hover:-translate-y-1">
-                  <Calendar className="h-5 w-5" />
-                  Book Appointment
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            <motion.div
+              variants={item}
+              className="relative grid grid-cols-2 sm:flex sm:flex-row gap-4 justify-center w-full max-w-md mx-auto"
+            >
+              <Link
+                href="/appointments"
+                aria-label="Book an appointment"
+                className="col-span-1 group"
+              >
+                <button className="w-full bg-gradient-to-r from-[#F7941D] to-[#FF8C00] text-white hover:from-[#FF8C00] hover:to-[#F7941D] transition-all px-8 py-4 rounded-xl font-semibold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-2xl transform hover:scale-105 duration-200 hover:-translate-y-1">
+                  Appointments
                 </button>
               </Link>
-              <Link href="/about" aria-label="Learn more about us" className="w-full sm:w-auto">
-                <button className="w-full sm:w-auto border-2 border-dark-purple/20 text-dark-purple hover:border-dark-purple hover:bg-dark-purple/5 transition-all px-8 py-4 rounded-xl font-semibold text-lg backdrop-blur-sm">
-                  Learn More
+              <Link
+                href="/chat"
+                aria-label="Learn more about us"
+                className="col-span-1"
+              >
+                <button className="w-full border-2 border-dark-purple/20 text-dark-purple hover:border-dark-purple hover:bg-dark-purple/5 transition-all px-8 py-4 rounded-xl font-semibold text-lg backdrop-blur-sm">
+                  Chats
                 </button>
               </Link>
             </motion.div>
