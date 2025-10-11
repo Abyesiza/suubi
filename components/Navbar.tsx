@@ -32,31 +32,31 @@ export default function Navbar() {
           {/* Desktop Layout */}
           <div className="hidden lg:flex justify-between items-center py-2 text-sm">
             <div className="flex items-center gap-6">
-              <a href="tel:+256772670744" className="flex items-center gap-2 hover:text-orange-300 transition-colors">
+              <a href="tel:+256787324041" className="flex items-center gap-2 hover:text-orange-300 transition-colors">
                 <Phone className="h-3.5 w-3.5" />
-                <span>+256 772 670 744</span>
+                <span>+256 787 324 041</span>
               </a>
               <div className="flex items-center gap-2">
                 <MapPin className="h-3.5 w-3.5" />
                 <span>Kayunga, Uganda</span>
               </div>
             </div>
-            <a href="tel:+256700304407" className="flex items-center gap-2 hover:text-orange-300 transition-colors">
+            <a href="tel:+256708726924" className="flex items-center gap-2 hover:text-orange-300 transition-colors">
               <span className="text-orange-300">Emergency:</span>
-              <span className="font-semibold">+256 700 304 407</span>
+              <span className="font-semibold">+256 708 726 924</span>
             </a>
           </div>
           
           {/* Mobile/Tablet Layout */}
           <div className="lg:hidden py-2 text-xs">
             <div className="flex items-center justify-between">
-              <a href="tel:+256772670744" className="flex items-center gap-1.5">
+              <a href="tel:+256787324041" className="flex items-center gap-1.5">
                 <Phone className="h-3 w-3" />
-                <span className="truncate">+256 772 670 744</span>
+                <span className="truncate">+256 787 324 041</span>
               </a>
-              <a href="tel:+256700304407" className="flex items-center gap-1.5 text-orange-300 font-semibold">
+              <a href="tel:+256708726924" className="flex items-center gap-1.5 text-orange-300 font-semibold">
                 <span className="hidden xs:inline">Emergency:</span>
-                <span>+256 700 304 407</span>
+                <span>+256 708 726 924</span>
               </a>
             </div>
           </div>

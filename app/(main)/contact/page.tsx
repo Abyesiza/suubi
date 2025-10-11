@@ -274,8 +274,8 @@ export default function ContactPage() {
                   <div>
                     <h3 className="text-lg font-medium text-dark-purple mb-1">Phone</h3>
                     <p className="text-dark-purple/70">
-                      Main: +256 772 670 744<br />
-                      Emergency: +256 700 304 407
+                      Main: +256 787 324 041<br />
+                      Emergency: +256 708 726 924
                     </p>
                   </div>
                 </div>
@@ -346,7 +346,7 @@ export default function ContactPage() {
               please call our emergency line or visit our facility immediately.
             </p>
             <Button className="bg-mustard hover:bg-suubi-green text-dark-purple hover:text-white transition-colors px-8">
-              Call Emergency: +256 700 304 407
+              Call Emergency: +256 708 726 924
             </Button>
           </div>
           
