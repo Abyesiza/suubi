@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Phone, Mail, MapPin, Clock, Send, Check } from 'lucide-react';
 import Lifeline from '@/components/ui/Lifeline';
 
@@ -21,11 +22,11 @@ const contactFormSchema = z.object({
   email: z.string().email({
     message: "Please enter a valid email address.",
   }),
-  phone: z.string().min(10, {
-    message: "Please enter a valid phone number.",
+  phone: z.string().min(9, {
+    message: "Please enter a valid Ugandan phone number.",
   }),
-  subject: z.string().min(5, {
-    message: "Subject must be at least 5 characters.",
+  subject: z.string().min(1, {
+    message: "Please select a subject.",
   }),
   message: z.string().min(10, {
     message: "Message must be at least 10 characters.",
@@ -36,6 +37,7 @@ type ContactFormValues = z.infer<typeof contactFormSchema>;
 
 export default function ContactPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Initialize form
   const form = useForm<ContactFormValues>({
@@ -50,18 +52,35 @@ export default function ContactPage() {
   });
 
   // Form submission handler
-  function onSubmit(data: ContactFormValues) {
-    // In a real application, this would send the data to a server
-    console.log(data);
+  async function onSubmit(data: ContactFormValues) {
+    setIsSubmitting(true);
     
-    // Show success message
-    setIsSubmitted(true);
-    
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      form.reset();
-      setIsSubmitted(false);
-    }, 3000);
+    try {
+      const res = await fetch('/api/send-email/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData?.error || 'Failed to send message');
+      }
+      
+      // Show success message
+      setIsSubmitted(true);
+      
+      // Reset form after 5 seconds
+      setTimeout(() => {
+        form.reset();
+        setIsSubmitted(false);
+      }, 5000);
+    } catch (err) {
+      console.error('Contact form submission failed:', err);
+      alert(err instanceof Error ? err.message : 'Failed to send your message. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -118,7 +137,7 @@ export default function ContactPage() {
                           <FormItem>
                             <FormLabel className="text-dark-purple">Full Name</FormLabel>
                             <FormControl>
-                              <Input placeholder="John Doe" {...field} className="border-[#73A580]/30 focus-visible:ring-suubi-green" />
+                              <Input placeholder="Mukasa John" {...field} className="border-[#73A580]/30 focus-visible:ring-suubi-green" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -132,7 +151,7 @@ export default function ContactPage() {
                           <FormItem>
                             <FormLabel className="text-dark-purple">Email</FormLabel>
                             <FormControl>
-                              <Input placeholder="johndoe@example.com" {...field} className="border-[#73A580]/30 focus-visible:ring-suubi-green" />
+                              <Input placeholder="yourname@gmail.com" {...field} className="border-[#73A580]/30 focus-visible:ring-suubi-green" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -148,7 +167,7 @@ export default function ContactPage() {
                           <FormItem>
                             <FormLabel className="text-dark-purple">Phone Number</FormLabel>
                             <FormControl>
-                              <Input placeholder="+1 (234) 567-8910" {...field} className="border-[#73A580]/30 focus-visible:ring-suubi-green" />
+                              <Input placeholder="+256 700 000 000" {...field} className="border-[#73A580]/30 focus-visible:ring-suubi-green" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -161,9 +180,24 @@ export default function ContactPage() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-dark-purple">Subject</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Appointment Request" {...field} className="border-[#73A580]/30 focus-visible:ring-suubi-green" />
-                            </FormControl>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="border-[#73A580]/30 focus:ring-suubi-green">
+                                  <SelectValue placeholder="Select a subject" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="General Inquiry">General Inquiry</SelectItem>
+                                <SelectItem value="Appointment Request">Appointment Request</SelectItem>
+                                <SelectItem value="Medical Consultation">Medical Consultation</SelectItem>
+                                <SelectItem value="Test Results">Test Results</SelectItem>
+                                <SelectItem value="Prescription Refill">Prescription Refill</SelectItem>
+                                <SelectItem value="Billing & Insurance">Billing & Insurance</SelectItem>
+                                <SelectItem value="Emergency Services">Emergency Services</SelectItem>
+                                <SelectItem value="Feedback & Complaints">Feedback & Complaints</SelectItem>
+                                <SelectItem value="Other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -178,7 +212,7 @@ export default function ContactPage() {
                           <FormLabel className="text-dark-purple">Message</FormLabel>
                           <FormControl>
                             <Textarea 
-                              placeholder="Please provide details about your inquiry..." 
+                              placeholder="Please describe your medical inquiry or appointment needs..." 
                               className="min-h-[120px] border-[#73A580]/30 focus-visible:ring-suubi-green" 
                               {...field} 
                             />
@@ -191,8 +225,17 @@ export default function ContactPage() {
                     <Button 
                       type="submit" 
                       className="bg-mustard hover:bg-suubi-green text-dark-purple hover:text-white transition-colors w-full"
+                      disabled={isSubmitting}
                     >
-                      <Send className="h-4 w-4 mr-2" /> Send Message
+                      {isSubmitting ? (
+                        <>
+                          <span className="animate-spin mr-2">⏳</span> Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4 mr-2" /> Send Message
+                        </>
+                      )}
                     </Button>
                   </form>
                 </Form>
@@ -244,8 +287,7 @@ export default function ContactPage() {
                   <div>
                     <h3 className="text-lg font-medium text-dark-purple mb-1">Email</h3>
                     <p className="text-dark-purple/70">
-                      info@suubihealthcare.com<br />
-                      appointments@suubihealthcare.com
+                      suubimedcarekayunga@gmail.com
                     </p>
                   </div>
                 </div>
