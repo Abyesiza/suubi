@@ -219,12 +219,12 @@ export default function ChatPage() {
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-full overflow-hidden flex-1">
           {/* Left Sidebar - Doctor List */}
-          <Card className="p-4 border-[#73A580]/30 md:col-span-1 h-full overflow-hidden flex flex-col">
+          <Card className="p-4 border-brand-eucalyptus/30 md:col-span-1 h-full overflow-hidden flex flex-col">
             <div className="relative mb-4">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-dark-purple/50" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-brand-navy/50" />
               <Input
                 placeholder="Search doctors..."
-                className="pl-10 w-full border-[#73A580]/30"
+                className="pl-10 w-full border-brand-eucalyptus/30"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -245,14 +245,14 @@ export default function ChatPage() {
                     whileHover={{ x: 4 }}
                     className={`p-3 rounded-lg cursor-pointer transition-colors ${
                       selectedRoomId === roomData.room._id 
-                        ? 'bg-[#73A580]/20' 
-                        : 'hover:bg-[#73A580]/10'
+                        ? 'bg-brand-eucalyptus/20' 
+                        : 'hover:bg-brand-teal/10'
                     }`}
                     onClick={() => handleRoomSelect(roomData)}
                   >
                     <div className="flex items-center gap-3">
                       <div className="relative">
-                        <Avatar className="h-10 w-10 border border-[#73A580]/30">
+                        <Avatar className="h-10 w-10 border border-brand-eucalyptus/30">
                           <img 
                             src={profileImage || 'https://via.placeholder.com/40?text=U'} 
                             alt={name} 
@@ -308,13 +308,13 @@ export default function ChatPage() {
           </Card>
           
           {/* Right Side - Chat Area */}
-          <Card className="border-[#73A580]/30 md:col-span-3 flex flex-col h-full overflow-hidden">
+          <Card className="border-brand-eucalyptus/30 md:col-span-3 flex flex-col h-full overflow-hidden">
             {selectedRoom ? (
               <>
                 {/* Chat Header */}
-                <div className="p-4 border-b border-[#73A580]/30 flex justify-between items-center">
+                <div className="p-4 border-b border-brand-eucalyptus/30 flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 border border-[#73A580]/30">
+                    <Avatar className="h-10 w-10 border border-brand-eucalyptus/30">
                       <img 
                         src={staffProfile?.profileImage || otherUser?.imageUrl || 'https://via.placeholder.com/40?text=U'} 
                         alt={`${otherUser?.firstName || ''} ${otherUser?.lastName || ''}`.trim()} 
@@ -370,7 +370,7 @@ export default function ChatPage() {
                           className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
                         >
                           {!isCurrentUser && (
-                            <Avatar className="h-8 w-8 mr-2 self-end mb-2 border border-[#73A580]/30">
+                            <Avatar className="h-8 w-8 mr-2 self-end mb-2 border border-brand-eucalyptus/30">
                               <img 
                                 src={message.sender.imageUrl || 'https://via.placeholder.com/32?text=U'} 
                                 alt={`${message.sender.firstName || ''} ${message.sender.lastName || ''}`.trim()} 
@@ -382,8 +382,8 @@ export default function ChatPage() {
                             <div
                               className={`rounded-xl p-3 inline-block ${
                                 isCurrentUser
-                                  ? 'bg-[#E1AD01]/90 text-dark-purple rounded-tr-none'
-                                  : 'bg-[#73A580]/20 text-dark-purple rounded-tl-none'
+                                  ? 'bg-brand-amber/90 text-brand-navy rounded-tr-none'
+                                  : 'bg-brand-eucalyptus/20 text-brand-navy rounded-tl-none'
                               }`}
                             >
                               <p className="whitespace-pre-wrap">{message.content}</p>
@@ -414,12 +414,12 @@ export default function ChatPage() {
                 </div>
             
                 {/* Message Input */}
-                <div className="p-3 border-t border-[#73A580]/30 bg-white">
+                <div className="p-3 border-t border-brand-eucalyptus/30 bg-white">
                   <div className="flex gap-2 items-center">
 
                     <Input
                       placeholder="Type your message..."
-                      className="flex-1 border-[#73A580]/30"
+                      className="flex-1 border-brand-eucalyptus/30"
                       value={newMessage}
                       onChange={(e) => handleInputChange(e.target.value)}
                       onKeyDown={(e) => {
@@ -431,7 +431,7 @@ export default function ChatPage() {
                       disabled={!currentUser}
                     />
                     <Button
-                      className="bg-[#E1AD01] hover:bg-[#73A580] text-dark-purple hover:text-white"
+                      className="bg-brand-amber hover:bg-brand-eucalyptus text-brand-navy hover:text-white"
                       onClick={handleSendMessage}
                       disabled={!newMessage.trim() || !currentUser}
                     >
@@ -439,14 +439,14 @@ export default function ChatPage() {
                     </Button>
                   </div>
                   <div className="mt-2 px-2">
-                    <p className="text-xs text-dark-purple/50 text-center">
+                    <p className="text-xs text-brand-navy/50 text-center">
                       All messages are encrypted and compliant with healthcare privacy regulations
                     </p>
                   </div>
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-dark-purple/60">
+              <div className="flex-1 flex items-center justify-center text-brand-navy/60">
                 <div className="text-center">
                   <p className="text-lg mb-2">Select a conversation</p>
                   <p className="text-sm">Choose a doctor or patient to start messaging</p>
@@ -458,9 +458,9 @@ export default function ChatPage() {
       </div>
       {/* Important Notice - moved outside container-custom to prevent entering the footer */}
       <div className="container-custom">
-        <div className="mt-6 bg-[#73A580]/20 rounded-xl p-4 text-sm text-dark-purple/80 relative">
+        <div className="mt-6 bg-brand-eucalyptus/15 rounded-xl p-4 text-sm text-brand-navy/80 relative border border-brand-eucalyptus/25">
           <div className="absolute top-0 left-0 right-0 h-1">
-            <Lifeline color="#E1AD01" height="6px" variant="thin" className="opacity-60" />
+            <Lifeline color="#FFB347" height="6px" variant="thin" className="opacity-60" />
           </div>
           <p className="font-medium">Important: Chat services are for non-urgent communication only</p>
           <p>For medical emergencies, please call emergency services (911) or go to your nearest emergency room.</p>

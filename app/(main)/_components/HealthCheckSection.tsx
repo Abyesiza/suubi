@@ -6,16 +6,17 @@ import Lifeline from '@/components/ui/Lifeline';
 
 export default function HealthCheckSection() {
   return (
-    <section className="bg-gradient-to-b from-teal-tint/5 to-background py-8 md:py-12 lg:py-16">
+    <section className="bg-gradient-to-b from-brand-sky/8 to-background py-16 md:py-20 lg:py-24">
       <div className="container-custom px-4">
-        <div className="text-center max-w-2xl mx-auto mb-6 md:mb-8">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4 text-dark-purple px-4">
+        <div className="text-center max-w-2xl mx-auto mb-12 md:mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-sm font-medium text-brand-navy mb-6">
+            <span className="inline-flex h-2 w-2 rounded-full bg-accent" />
+            Quick Check-In
+          </div>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 text-brand-navy px-4">
             How are you feeling today?
           </h2>
-          <div className="w-32 md:w-40 h-4 md:h-6 mx-auto mb-3 md:mb-4">
-            <Lifeline color="#F7941D" height="8px" variant="minimal" className="md:h-3" />
-          </div>
-          <p className="text-dark-purple/80 text-sm md:text-base lg:text-lg px-4">
+          <p className="text-brand-navy/70 text-base md:text-lg lg:text-xl px-4 leading-relaxed">
             Take our quick health assessment to get personalized recommendations
           </p>
         </div>
@@ -27,7 +28,7 @@ export default function HealthCheckSection() {
             shadow="xl"
             minHeight="180px"
             maxWidth="800px"
-            className="mx-auto border-suubi-green/30 hover:border-suubi-green/50 transition-colors"
+            className="mx-auto border-brand-eucalyptus/30 hover:border-brand-teal/50 transition-colors"
           >
             <div className="p-4 md:p-6 lg:p-8">
               <CardItem translateZ="50" className="mb-4 md:mb-6">
@@ -58,7 +59,7 @@ export default function HealthCheckSection() {
               {/* Decorative lifeline at bottom */}
               <CardItem translateZ="20" className="mt-4 md:mt-6">
                 <div className="w-full h-3 md:h-4 opacity-30">
-                  <Lifeline color="#2E8B57" height="6px" variant="minimal" className="md:h-2" />
+                  <Lifeline color="#3C8C7F" height="6px" variant="minimal" className="md:h-2" />
                 </div>
               </CardItem>
             </div>

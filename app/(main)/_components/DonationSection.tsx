@@ -28,7 +28,7 @@ export default function DonationSection() {
             shadow="xl"
             minHeight="250px"
             maxWidth="1000px"
-            className="mx-auto border-mustard/30 hover:border-mustard/50 transition-colors"
+            className="mx-auto border-brand-amber/30 hover:border-brand-orange/50 transition-colors"
           >
             <div className="flex flex-col lg:flex-row items-center gap-4 md:gap-6 lg:gap-8 p-4 md:p-6 lg:p-8">
               <div className="flex-1 w-full lg:w-auto">
@@ -40,11 +40,11 @@ export default function DonationSection() {
                   className="space-y-3 md:space-y-4 lg:space-y-6"
                 >
                   <CardItem translateZ="60">
-                    <h3 className="text-xl md:text-2xl font-semibold text-dark-purple">Making a Difference Together</h3>
+                    <h3 className="text-xl md:text-2xl font-semibold text-brand-navy">Making a Difference Together</h3>
                   </CardItem>
                   
                   <CardItem translateZ="50">
-                    <p className="text-dark-purple/80 text-base md:text-lg">
+                    <p className="text-brand-navy/75 text-base md:text-lg">
                       Your support helps us provide medical care to underserved communities and individuals who cannot afford healthcare services.
                     </p>
                   </CardItem>
@@ -63,7 +63,7 @@ export default function DonationSection() {
               <div className="flex-1 w-full lg:w-auto">
                 <CardItem translateZ="80" className="relative">
                   <div className="relative h-40 md:h-48 lg:h-64 rounded-xl overflow-hidden shadow-lg">
-                    <div className="absolute inset-0 bg-gradient-to-r from-mustard/30 to-suubi-green/20 z-10"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-brand-amber/30 to-brand-eucalyptus/25 z-10"></div>
                     <img 
                       src="https://images.unsplash.com/photo-1515377905703-c4788e51af15?q=80&w=1170" 
                       alt="Medical volunteer helping a patient" 
@@ -71,7 +71,7 @@ export default function DonationSection() {
                     />
                     {/* Decorative lifeline overlay */}
                     <div className="absolute bottom-0 left-0 right-0 h-4 md:h-6 z-20">
-                      <Lifeline color="#F7941D" height="8px" variant="minimal" className="opacity-60 md:h-3" />
+                      <Lifeline color="#FFB347" height="8px" variant="minimal" className="opacity-60 md:h-3" />
                     </div>
                   </div>
                 </CardItem>

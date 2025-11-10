@@ -24,22 +24,22 @@ export default function FeaturesSection() {
         
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
           <FeatureCard
-            icon={<Calendar className="h-6 w-6 md:h-8 md:w-8 text-suubi-green" />}
+            icon={<Calendar className="h-6 w-6 md:h-8 md:w-8 text-brand-eucalyptus" />}
             title="Easy Scheduling"
             description="Book appointments online with just a few clicks"
           />
           <FeatureCard
-            icon={<Users className="h-6 w-6 md:h-8 md:w-8 text-suubi-green" />}
+            icon={<Users className="h-6 w-6 md:h-8 md:w-8 text-brand-teal" />}
             title="Expert Doctors"
             description="Consult with our experienced healthcare professionals"
           />
           <FeatureCard
-            icon={<Clock className="h-6 w-6 md:h-8 md:w-8 text-mustard" />}
+            icon={<Clock className="h-6 w-6 md:h-8 md:w-8 text-brand-amber" />}
             title="24/7 Support"
             description="Round-the-clock assistance for your health needs"
           />
           <FeatureCard
-            icon={<Activity className="h-6 w-6 md:h-8 md:w-8 text-suubi-green" />}
+            icon={<Activity className="h-6 w-6 md:h-8 md:w-8 text-brand-eucalyptus" />}
             title="Health Tracking"
             description="Monitor your health progress effectively"
           />
