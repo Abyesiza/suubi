@@ -55,6 +55,23 @@
 
     --radius: 0.5rem;
 
+    /* Warm gradients and shadows */
+    --gradient-hero: linear-gradient(135deg, #0F2E47 0%, #1F4F61 45%, #3C8C7F 100%);
+    --gradient-hero-overlay: radial-gradient(circle at center, rgba(255, 255, 255, 0.18) 0%, rgba(12, 45, 64, 0.55) 68%);
+    --gradient-section: linear-gradient(135deg, rgba(249, 194, 123, 0.15) 0%, rgba(127, 200, 169, 0.18) 40%, rgba(15, 46, 71, 0.22) 100%);
+    --gradient-eucalyptus: linear-gradient(145deg, rgba(60, 140, 127, 0.18) 0%, rgba(15, 46, 71, 0.25) 100%);
+    --gradient-amber-glow: linear-gradient(135deg, rgba(255, 179, 71, 0.35) 0%, rgba(255, 140, 66, 0.25) 100%);
+
+    --shadow-brand-xl: 0 35px 65px -25px rgba(15, 46, 71, 0.55);
+    --shadow-brand-lg: 0 24px 45px -20px rgba(31, 79, 97, 0.35);
+    --shadow-brand-soft: 0 18px 40px -20px rgba(60, 140, 127, 0.28);
+    --shadow-card-inner: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+    /* Spacing scale for section rhythm */
+    --space-section-y: clamp(4rem, 8vw, 7rem);
+    --space-section-gap: clamp(2.5rem, 5vw, 4.5rem);
+    --space-token-lg: clamp(2rem, 4vw, 3.5rem);
+
     /* Chart colors using new palette */
     --chart-1: 214 52% 25%; /* Dark Blue */
     --chart-2: 152 50% 37%; /* Green */
@@ -131,44 +148,82 @@
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 
-  /* Global button styles for zoom effect */
-  button, .btn-primary {
-    @apply transition-all duration-300;
-    
-    &:hover {
-      transform: scale(1.05);
-    }
+  .section-shell {
+    padding-top: var(--space-section-y);
+    padding-bottom: var(--space-section-y);
   }
 
-  .btn-primary {
-    /* Use Tailwind classes referencing the new theme colors */
-    @apply bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium;
-    
-    /* Apply the accent (mustard yellow) color on hover */
-    &:hover {
-      @apply bg-accent text-accent-foreground;
-      transform: scale(1.05);
-    }
+  .section-gap {
+    @apply grid gap-10 lg:gap-16;
   }
 
-  /* Button outline variant */
-  button[variant="outline"], 
-  .btn-outline,
-  [class*="variant-outline"] {
-    @apply border border-primary text-primary bg-transparent;
-    
-    &:hover {
-      @apply bg-accent text-accent-foreground border-accent;
-      transform: scale(1.05);
-    }
+  .section-eyebrow {
+    @apply inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white/90;
+  }
+
+  .hero-shell {
+    background-image: var(--gradient-hero);
+    @apply relative min-h-[92vh] overflow-hidden text-white;
+  }
+
+  .hero-glow {
+    background-image: var(--gradient-hero-overlay);
+    @apply absolute inset-0 mix-blend-multiply opacity-90 pointer-events-none;
+  }
+
+  .surface-card {
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: var(--shadow-brand-soft);
+    @apply border border-white/20 backdrop-blur-xl rounded-3xl;
+  }
+
+  .surface-card--glow {
+    background-image: var(--gradient-amber-glow);
+    box-shadow: var(--shadow-brand-xl);
+    @apply border border-white/25 backdrop-blur-2xl rounded-3xl;
+  }
+
+  .surface-muted {
+    background-image: var(--gradient-section);
+    @apply rounded-3xl border border-white/10;
+  }
+
+  .pill-badge {
+    @apply inline-flex items-center gap-2 rounded-full border border-accent/60 bg-accent/15 px-4 py-1.5 text-sm font-medium text-accent-foreground;
+  }
+
+  .cta-stack {
+    @apply flex flex-col sm:flex-row sm:justify-center lg:justify-start gap-3 sm:gap-4 w-full;
+  }
+
+  .cta-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#FFB347] to-[#FF8C42] px-8 py-4 text-lg font-semibold text-[#2D2A32] shadow-brand-lg transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white;
+  }
+  .cta-primary:hover {
+    @apply from-[#FF9D2D] to-[#FFB347] -translate-y-[2px] shadow-brand-xl;
+  }
+
+  .cta-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-8 py-4 text-lg font-semibold text-white shadow-brand-soft transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white;
+    background-color: rgba(255, 255, 255, 0.15);
+  }
+  .cta-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+    @apply shadow-brand-lg;
+  }
+
+  .btn-outline-brand {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-brand-navy/40 bg-transparent px-6 py-3 text-base font-medium text-brand-navy transition-all duration-200;
+  }
+  .btn-outline-brand:hover {
+    @apply border-brand-navy bg-brand-navy text-white -translate-y-[1px];
   }
 
   .card {
-    /* Use Tailwind classes referencing the new theme colors */
     @apply bg-card text-card-foreground rounded-2xl shadow-lg p-6;
   }
-  
-  /* Add some new helpful utility classes */
+
   .bg-green-subtle {
     background-color: hsl(var(--suubi-green-50));
   }
@@ -181,12 +236,6 @@
     color: hsl(var(--suubi-green-800));
   }
 
-  /* Add direct utility classes for our specific colors */
-  /* Updated to new palette:
-     - Dark Blue (navy): #1E3A5F
-     - Green (health): #2E8B57
-     - Orange (accent/CTA): #F7941D
-  */
   .bg-mustard {
     background-color: #F7941D; /* Orange */
   }

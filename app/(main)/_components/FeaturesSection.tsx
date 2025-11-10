@@ -7,20 +7,17 @@ import Lifeline from '@/components/ui/Lifeline';
 
 export default function FeaturesSection() {
   return (
-    <section className="py-8 md:py-12 lg:py-16 bg-gradient-to-b from-teal-tint/10 via-background to-teal-tint/5">
+    <section className="py-16 md:py-20 lg:py-24 bg-gradient-to-b from-brand-sky/15 via-background to-brand-sky/5">
       <div className="container-custom px-4">
-        <div className="flex justify-center mb-4 md:mb-6">
-          <Loader size="sm" text="Finding the best solutions for you" />
-        </div>
-        
-        <div className="text-center mb-6 md:mb-8">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4 text-dark-purple px-4">
+        <div className="text-center mb-12 md:mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-sm font-medium text-brand-navy mb-6">
+            <span className="inline-flex h-2 w-2 rounded-full bg-accent" />
+            What Makes Us Different
+          </div>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 text-brand-navy px-4">
             Why Choose Suubi Healthcare?
           </h2>
-          <div className="w-32 md:w-40 h-4 md:h-6 mx-auto mb-3 md:mb-4">
-            <Lifeline color="#F7941D" height="8px" variant="minimal" className="md:h-3" />
-          </div>
-          <p className="text-dark-purple/70 max-w-2xl mx-auto text-sm md:text-base lg:text-lg px-4">
+          <p className="text-brand-navy/70 max-w-2xl mx-auto text-base md:text-lg lg:text-xl px-4 leading-relaxed">
             Experience healthcare that puts your wellbeing first with our comprehensive services and caring approach.
           </p>
         </div>
@@ -47,11 +44,9 @@ export default function FeaturesSection() {
             description="Monitor your health progress effectively"
           />
         </div>
-        <div className="flex justify-center mt-6 md:mt-8">
-          <Link href="/services">
-            <HoverBorderGradient containerClassName="rounded-full" className="font-medium justify-center items-center text-sm md:text-base px-6 md:px-8 py-3 md:py-4">
-              Explore Our Services
-            </HoverBorderGradient>
+        <div className="flex justify-center mt-12 md:mt-16">
+          <Link href="/services" className="btn-outline-brand">
+            Explore Our Services
           </Link>
         </div>
       </div>

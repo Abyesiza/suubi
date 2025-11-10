@@ -290,19 +290,20 @@ export default function AppointmentsPage() {
   };
 
   return (
-    <div className="min-h-screen py-12 bg-background">
+    <div className="min-h-screen py-16 md:py-20 lg:py-24 bg-gradient-to-b from-brand-sky/10 to-background">
       <div className="container-custom">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-12"
+          className="text-center mb-12 md:mb-16"
         >
-          <h1 className="text-4xl font-bold mb-4 text-foreground">Manage Your Appointments</h1>
-          <div className="w-48 h-6 mx-auto mb-4">
-            <Lifeline color="#FF9933" height="12px" variant="minimal" />
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-sm font-medium text-brand-navy mb-6">
+            <span className="inline-flex h-2 w-2 rounded-full bg-accent" />
+            Your Healthcare Journey
           </div>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 text-brand-navy">Manage Your Appointments</h1>
+          <p className="text-brand-navy/70 max-w-2xl mx-auto text-base md:text-lg lg:text-xl leading-relaxed">
             Schedule and track your medical appointments with our healthcare professionals.
           </p>
         </motion.div>

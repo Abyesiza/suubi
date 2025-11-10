@@ -3,17 +3,17 @@ import TestimonialCard from './TestimonialCard';
 
 export default function TestimonialsSection() {
   return (
-    <section className="py-8 md:py-12 lg:py-16 bg-gradient-to-b from-background via-teal-tint/5 to-background">
+    <section className="py-16 md:py-20 lg:py-24 bg-gradient-to-b from-background to-brand-sky/10">
       <div className="container-custom px-4">
-        <div className="mb-6 md:mb-8 text-center">
-
-          <div className="w-32 md:w-40 h-4 md:h-6 mx-auto mb-3 md:mb-4">
-            <Lifeline color="#F7941D" height="8px" variant="minimal" className="md:h-3" />
+        <div className="mb-12 md:mb-16 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-sm font-medium text-brand-navy mb-6">
+            <span className="inline-flex h-2 w-2 rounded-full bg-accent" />
+            Trusted by Families
           </div>
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4 text-dark-purple px-4">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 text-brand-navy px-4">
             Patient Stories
           </h2>
-          <p className="text-dark-purple/80 max-w-2xl mx-auto text-sm md:text-base lg:text-lg px-4">
+          <p className="text-brand-navy/70 max-w-2xl mx-auto text-base md:text-lg lg:text-xl px-4 leading-relaxed">
             Real experiences from our community
           </p>
         </div>

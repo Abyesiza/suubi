@@ -199,16 +199,20 @@ export default function ChatPage() {
   const staffProfile = selectedRoom?.staffProfile;
   
   return (
-    <div className="min-h-screen pt-8 pb-12 bg-background flex flex-col">
+    <div className="min-h-screen pt-16 md:pt-20 pb-12 bg-gradient-to-b from-brand-sky/10 to-background flex flex-col">
       <div className="container-custom flex-1 flex flex-col h-[calc(100vh-180px)] max-h-[900px]">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="mb-6"
+          className="mb-8 md:mb-10 text-center"
         >
-          <h1 className="text-3xl font-bold mb-2 text-dark-purple">Doctor Chat</h1>
-          <p className="text-dark-purple/80">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-sm font-medium text-brand-navy mb-4">
+            <span className="inline-flex h-2 w-2 rounded-full bg-accent" />
+            Real-Time Care
+          </div>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-4 text-brand-navy">Talk to Our Team</h1>
+          <p className="text-brand-navy/70 max-w-2xl mx-auto text-base md:text-lg leading-relaxed">
             Securely message your healthcare providers and receive medical guidance.
           </p>
         </motion.div>
