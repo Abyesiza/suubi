@@ -1,85 +1,170 @@
-import { HoverBorderGradient } from '@/components/ui/HoverBorderGradient';
-import Link from 'next/link';
-import Lifeline from '@/components/ui/Lifeline';
+'use client';
+
 import { motion } from 'framer-motion';
-import { CardContainer, CardBody, CardItem } from '@/components/ui/3d-card';
+import Link from 'next/link';
+import Image from 'next/image';
+import { 
+  Heart, 
+  ArrowRight, 
+  Users,
+  Stethoscope,
+  Baby,
+  GraduationCap
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+
+const impactAreas = [
+  { icon: Baby, label: 'Maternal Care', count: '500+', color: 'text-pink-500' },
+  { icon: Users, label: 'Families Helped', count: '2K+', color: 'text-brand-teal' },
+  { icon: Stethoscope, label: 'Medical Treatments', count: '10K+', color: 'text-brand-orange' },
+  { icon: GraduationCap, label: 'Health Education', count: '3K+', color: 'text-purple-500' },
+];
 
 export default function DonationSection() {
   return (
-    <section className="py-16 md:py-20 lg:py-24 bg-gradient-to-b from-background to-brand-sky/10">
-      <div className="container-custom px-4">
-        <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-sm font-medium text-brand-navy mb-6">
-            <span className="inline-flex h-2 w-2 rounded-full bg-accent" />
-            Make an Impact
-          </div>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 text-brand-navy px-4">
-            Be a Healthcare Hero
-          </h2>
-          <p className="text-brand-navy/70 text-base md:text-lg lg:text-xl px-4 leading-relaxed">
-            Your generosity can save lives. Every donation helps provide essential medical care to those who need it most.
-          </p>
-        </div>
-        
-        <CardContainer rotationFactor={25} perspective={1200}>
-          <CardBody 
-            variant="auto" 
-            background="white" 
-            shadow="xl"
-            minHeight="250px"
-            maxWidth="1000px"
-            className="mx-auto border-brand-amber/30 hover:border-brand-orange/50 transition-colors"
+    <section className="py-20 lg:py-28 bg-gradient-to-b from-white to-brand-orange/5 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand-orange/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-brand-teal/10 rounded-full blur-3xl" />
+      </div>
+
+      <div className="container-custom relative z-10">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* Content */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="order-2 lg:order-1"
           >
-            <div className="flex flex-col lg:flex-row items-center gap-4 md:gap-6 lg:gap-8 p-4 md:p-6 lg:p-8">
-              <div className="flex-1 w-full lg:w-auto">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6 }}
-                  viewport={{ once: true }}
-                  className="space-y-3 md:space-y-4 lg:space-y-6"
+            <Badge variant="secondary" className="mb-4 bg-red-50 text-red-600 border-red-100">
+              <Heart className="w-3 h-3 mr-1 fill-red-500" />
+              Make an Impact
+            </Badge>
+            
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-brand-navy mb-6">
+              Be a{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-orange to-red-500">
+                Healthcare Hero
+              </span>
+            </h2>
+            
+            <p className="text-brand-navy/60 text-lg mb-8 leading-relaxed">
+              Your generosity can save lives. Every donation helps provide essential medical care 
+              to underserved communities and individuals who cannot afford healthcare services.
+            </p>
+
+            {/* Impact Stats */}
+            <div className="grid grid-cols-2 gap-4 mb-8">
+              {impactAreas.map((area, index) => {
+                const Icon = area.icon;
+                return (
+                  <motion.div
+                    key={area.label}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.1 + index * 0.1 }}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-white shadow-sm border border-gray-100"
+                  >
+                    <div className={cn("w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center", area.color)}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-brand-navy">{area.count}</p>
+                      <p className="text-xs text-brand-navy/50">{area.label}</p>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link href="/donate">
+                <Button 
+                  size="lg"
+                  className="w-full sm:w-auto bg-gradient-to-r from-brand-orange to-red-500 hover:from-red-500 hover:to-brand-orange text-white shadow-lg hover:shadow-xl transition-all group"
                 >
-                  <CardItem translateZ="60">
-                    <h3 className="text-xl md:text-2xl font-semibold text-brand-navy">Making a Difference Together</h3>
-                  </CardItem>
-                  
-                  <CardItem translateZ="50">
-                    <p className="text-brand-navy/75 text-base md:text-lg">
-                      Your support helps us provide medical care to underserved communities and individuals who cannot afford healthcare services.
-                    </p>
-                  </CardItem>
-                  
-                  <CardItem translateZ="70" className="flex gap-3 md:gap-4 flex-wrap">
-                    <Link href="/donate" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-accent to-amber-500 px-6 py-3 text-base font-semibold text-white shadow-brand-lg transition-all duration-200 hover:shadow-brand-xl hover:-translate-y-[2px]">
-                        Donate Now
-                    </Link>
-                    <Link href="/register-patient" className="btn-outline-brand">
-                        Register Someone
-                    </Link>
-                  </CardItem>
-                </motion.div>
-              </div>
+                  <Heart className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                  Donate Now
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+              <Link href="/register-patient">
+                <Button 
+                  size="lg"
+                  variant="outline"
+                  className="w-full sm:w-auto border-brand-navy/20 text-brand-navy hover:bg-brand-navy hover:text-white"
+                >
+                  <Users className="w-5 h-5 mr-2" />
+                  Register Someone in Need
+                </Button>
+              </Link>
+            </div>
+          </motion.div>
+
+          {/* Image */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="order-1 lg:order-2"
+          >
+            <div className="relative">
+              {/* Glow effect */}
+              <div className="absolute -inset-4 bg-gradient-to-r from-brand-orange/20 to-red-500/20 rounded-3xl blur-2xl" />
               
-              <div className="flex-1 w-full lg:w-auto">
-                <CardItem translateZ="80" className="relative">
-                  <div className="relative h-40 md:h-48 lg:h-64 rounded-xl overflow-hidden shadow-lg">
-                    <div className="absolute inset-0 bg-gradient-to-r from-brand-amber/30 to-brand-eucalyptus/25 z-10"></div>
-                    <img 
-                      src="https://images.unsplash.com/photo-1515377905703-c4788e51af15?q=80&w=1170" 
-                      alt="Medical volunteer helping a patient" 
-                      className="w-full h-full object-cover"
-                    />
-                    {/* Decorative lifeline overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 h-4 md:h-6 z-20">
-                      <Lifeline color="#FFB347" height="8px" variant="minimal" className="opacity-60 md:h-3" />
+              {/* Main image */}
+              <Card className="relative overflow-hidden border-0 shadow-2xl">
+                <div className="aspect-[4/3] relative">
+                  <Image
+                    src="https://images.unsplash.com/photo-1515377905703-c4788e51af15?q=80&w=1170"
+                    alt="Medical volunteer helping a patient"
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/60 via-transparent to-transparent" />
+                  
+                  {/* Overlay content */}
+                  <div className="absolute bottom-0 inset-x-0 p-6">
+                    <div className="flex items-center gap-3 text-white">
+                      <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                        <Heart className="w-6 h-6 text-white fill-white" />
+                      </div>
+                      <div>
+                        <p className="font-semibold">Together We Heal</p>
+                        <p className="text-sm text-white/80">Every contribution matters</p>
+                      </div>
                     </div>
                   </div>
-                </CardItem>
-              </div>
+                </div>
+              </Card>
+
+              {/* Floating donation card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 }}
+                className="absolute -bottom-6 -left-6 hidden md:block"
+              >
+                <Card className="border-0 shadow-xl bg-white">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-brand-navy/60 mb-1">Recent Impact</p>
+                    <p className="text-2xl font-bold text-brand-orange">$25,000+</p>
+                    <p className="text-xs text-brand-navy/50">Raised this month</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
             </div>
-          </CardBody>
-        </CardContainer>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
-} 
+}

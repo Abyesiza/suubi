@@ -2,11 +2,34 @@
 
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Star, Mail, Calendar, Phone, Award, ThumbsUp, RefreshCw } from 'lucide-react';
-import Lifeline from '@/components/ui/Lifeline';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Star,
+  Mail,
+  Calendar,
+  Search,
+  Award,
+  ThumbsUp,
+  Phone,
+  Clock,
+  MessageSquare,
+  CheckCircle,
+  Users,
+  Stethoscope,
+  Languages,
+  Loader2,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation } from 'convex/react';
@@ -14,17 +37,31 @@ import { useUser } from '@clerk/nextjs';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 
-export default function DoctorsPage() {
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
+
+export default function StaffPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isCreatingRoom, setIsCreatingRoom] = useState<string | null>(null);
-  const [isFixing, setIsFixing] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  
+
   const router = useRouter();
   const { user: clerkUser } = useUser();
 
-  // Fetch staff from profiles; exclude admin roles in backend
+  // Fetch staff from profiles
   const doctorsRaw = useQuery(
     api.staffProfiles.listStaffWithUsers,
     selectedRole === 'all' ? {} : { role: selectedRole as any }
@@ -38,108 +75,69 @@ export default function DoctorsPage() {
 
   // Mutations
   const createRoomWithStaffProfile = useMutation(api.room.createOrGetRoomWithStaffProfile);
-  const checkAndFixDatabase = useMutation(api.staffProfiles.checkAndFixDatabaseState);
 
   const isLoading = doctorsRaw === undefined;
   const doctorsData = doctorsRaw ?? [];
 
-  const doctors = useMemo(() => {
+  const staff = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
     return doctorsData
-      .filter((doctorData: any) => {
-        // Filter out entries that don't have both user and staffProfile
-        if (!doctorData || !doctorData.user || !doctorData.staffProfile) {
-          return false;
-        }
-        return true;
-      })
-      .map((doctorData: any) => {
-        const { user, staffProfile } = doctorData;
-
-        // Additional safety checks
-        if (!user || !staffProfile) {
-          return null;
-        }
-
+      .filter((item: any) => item && item.user && item.staffProfile)
+      .map((item: any) => {
+        const { user, staffProfile } = item;
         const firstName = user?.firstName ?? '';
         const lastName = user?.lastName ?? '';
-        const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'Dr. Staff';
-        const image = staffProfile?.profileImage || user?.imageUrl || 'https://via.placeholder.com/600x400?text=Doctor';
+        const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'Staff Member';
+        const image = staffProfile?.profileImage || user?.imageUrl;
         const specialty = staffProfile?.specialty || staffProfile?.subRole || 'General Practice';
-        const experience = staffProfile?.experience ? `${staffProfile.experience} years` : '—';
+        const experience = staffProfile?.experience || 0;
         const rating = staffProfile?.rating || 0;
         const bio = staffProfile?.bio || 'Experienced healthcare professional dedicated to providing quality care.';
-        const availability = staffProfile?.isAvailable ? 'Available' : 'Not Available';
+        const isAvailable = staffProfile?.isAvailable ?? false;
 
         return {
-          id: String(staffProfile._id), // Use staff profile ID for chat functionality
-          userId: String(user._id), // Keep user ID for reference
+          id: String(staffProfile._id),
+          userId: String(user._id),
           name: fullName,
+          initials: `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase(),
           image,
           specialty: specialty.replace(/_/g, ' '),
           experience,
-          rating: rating.toFixed(1),
+          rating,
           bio,
-          availability,
+          isAvailable,
           consultationFee: staffProfile?.consultationFee,
           qualifications: staffProfile?.qualifications || [],
           languages: staffProfile?.languages || [],
+          role: staffProfile?.role,
+          verified: staffProfile?.verified,
         };
       })
-      .filter((doctor): doctor is NonNullable<typeof doctor> => doctor !== null)
-      .filter((doctor) => {
+      .filter((staff) => {
         if (!normalizedQuery) return true;
-        const name = doctor.name.toLowerCase();
-        const specialty = (doctor.specialty || '').toLowerCase();
-        const quals = (doctor.qualifications || []).join(' ').toLowerCase();
-        const langs = (doctor.languages || []).join(' ').toLowerCase();
+        const name = staff.name.toLowerCase();
+        const specialty = (staff.specialty || '').toLowerCase();
+        const quals = (staff.qualifications || []).join(' ').toLowerCase();
+        const langs = (staff.languages || []).join(' ').toLowerCase();
         return (
           name.includes(normalizedQuery) ||
           specialty.includes(normalizedQuery) ||
           quals.includes(normalizedQuery) ||
           langs.includes(normalizedQuery)
         );
-      }); // Remove any null entries and apply search filter
+      });
   }, [doctorsData, searchQuery]);
 
-  // Handle database fix
-  const handleFixDatabase = async () => {
-    setIsFixing(true);
-    try {
-      const result = await checkAndFixDatabase();
-      console.log("Database fix result:", result);
-      // The page will automatically refresh due to reactive queries
-    } catch (error) {
-      console.error("Failed to fix database:", error);
-    } finally {
-      setIsFixing(false);
-    }
-  };
-
-  // Handle chat button click - create room and navigate to chat
+  // Handle chat button click
   const handleStartChat = async (staffProfileId: string) => {
-    if (!currentUser) {
-      console.error("User not logged in");
-      return;
-    }
+    if (!currentUser) return;
 
     setIsCreatingRoom(staffProfileId);
     try {
-      console.log("Creating room for patient:", {
-        patientName: `${currentUser.firstName} ${currentUser.lastName}`,
-        patientEmail: currentUser.email,
-        staffProfileId
-      });
-
-      // Create or get existing room
-      const roomId = await createRoomWithStaffProfile({
+      await createRoomWithStaffProfile({
         patientUserId: currentUser._id,
         staffProfileId: staffProfileId as Id<"staff_profiles">,
       });
-
-      console.log("Room created successfully:", roomId);
-
-      // Navigate to chat page with the room
       router.push(`/chat?staffProfileId=${staffProfileId}`);
     } catch (error) {
       console.error("Failed to create chat room:", error);
@@ -149,208 +147,307 @@ export default function DoctorsPage() {
   };
 
   return (
-    <div className="min-h-screen py-12 bg-background">
-      <div className="container-custom">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-12"
-        >
-          <h1 className="text-4xl font-bold mb-4 text-foreground">Our Expert Staff</h1>
-          <div className="w-48 h-6 mx-auto mb-4">
-            <Lifeline color="#FF9933" height="12px" variant="minimal" />
-          </div>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Meet our team of experienced healthcare professionals dedicated to providing you with the highest quality care.
-          </p>
-        </motion.div>
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+      {/* Hero Section */}
+      <section className="relative py-20 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-teal/5 via-transparent to-brand-eucalyptus/5" />
+        <div className="container-custom relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center max-w-3xl mx-auto"
+          >
+            <Badge className="mb-4 bg-brand-teal/10 text-brand-teal hover:bg-brand-teal/20">
+              <Stethoscope className="w-3 h-3 mr-1" />
+              Expert Healthcare Team
+            </Badge>
+            <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-brand-navy to-brand-teal bg-clip-text text-transparent">
+              Meet Our Medical Professionals
+            </h1>
+            <p className="text-lg text-muted-foreground mb-8">
+              Our team of experienced healthcare professionals is dedicated to providing you with the highest quality care. 
+              Book an appointment or start a conversation today.
+            </p>
 
-        {/* Search + Role filter */}
-        <div className="mb-6 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-          <div className="w-full md:w-1/2">
-            <Input
-              placeholder="Search staff by name, specialty, language..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <div className="flex justify-end w-full md:w-auto">
-            <select
-              className="w-full md:w-[220px] h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
-            >
-              <option value="all">All Staff</option>
-              <option value="doctor">Doctors</option>
-              <option value="nurse">Nurses</option>
-              <option value="allied_health">Allied Health</option>
-              <option value="support_staff">Support Staff</option>
-              <option value="administrative_staff">Administrative Staff</option>
-              <option value="technical_staff">Technical Staff</option>
-              <option value="training_research_staff">Training & Research</option>
-            </select>
-          </div>
+            {/* Search & Filter */}
+            <div className="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name, specialty..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={selectedRole} onValueChange={setSelectedRole}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <SelectValue placeholder="Filter by role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Staff</SelectItem>
+                  <SelectItem value="doctor">Doctors</SelectItem>
+                  <SelectItem value="nurse">Nurses</SelectItem>
+                  <SelectItem value="allied_health">Allied Health</SelectItem>
+                  <SelectItem value="support_staff">Support Staff</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </motion.div>
         </div>
+      </section>
 
-        {isLoading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, idx) => (
-              <Card key={idx} className="h-80 animate-pulse bg-muted" />
-            ))}
-          </div>
-        ) : doctors.length === 0 ? (
-          <div className="text-center py-20">
-            <h3 className="text-2xl font-semibold mb-2 text-foreground">No staff found</h3>
-            <p className="text-muted-foreground mb-4">Try adjusting your search criteria</p>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {doctors.map((doctor) => (
-              <motion.div
-                key={doctor.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                whileHover={{ y: -5 }}
-              >
-                <Card className="overflow-hidden border-green-light h-full flex flex-col">
-                  <div className="relative h-48 overflow-hidden">
-                    <img
-                      src={doctor.image}
-                      alt={doctor.name}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 h-12">
-                      <Lifeline color="#FF9933" height="20px" variant="thin" className="opacity-60" />
+      {/* Staff Grid */}
+      <section className="pb-20">
+        <div className="container-custom">
+          {isLoading ? (
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <motion.div key={idx} variants={itemVariants}>
+                  <Card className="h-[400px] animate-pulse">
+                    <div className="h-32 bg-muted rounded-t-lg" />
+                    <CardContent className="p-6 space-y-4">
+                      <div className="h-4 bg-muted rounded w-3/4" />
+                      <div className="h-3 bg-muted rounded w-1/2" />
+                      <div className="h-20 bg-muted rounded" />
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : staff.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-20"
+            >
+              <Users className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+              <h3 className="text-2xl font-semibold mb-2">No staff found</h3>
+              <p className="text-muted-foreground">Try adjusting your search or filter criteria</p>
+            </motion.div>
+          ) : (
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {staff.map((member) => (
+                <motion.div
+                  key={member.id}
+                  variants={itemVariants}
+                  whileHover={{ y: -8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Card className="group overflow-hidden h-full flex flex-col hover:shadow-xl transition-shadow duration-300">
+                    {/* Card Header */}
+                    <div className="relative h-28 bg-gradient-to-br from-brand-teal to-brand-eucalyptus">
+                      <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-10" />
+                      {/* Availability Badge */}
+                      <div className="absolute top-3 right-3">
+                        <Badge
+                          variant={member.isAvailable ? "default" : "secondary"}
+                          className={member.isAvailable 
+                            ? "bg-green-500 text-white" 
+                            : "bg-gray-500 text-white"
+                          }
+                        >
+                          <span className={`w-2 h-2 rounded-full mr-1.5 ${member.isAvailable ? 'bg-green-200' : 'bg-gray-300'}`} />
+                          {member.isAvailable ? "Available" : "Unavailable"}
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="p-5 flex-1 flex flex-col">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-xl font-semibold text-foreground">{doctor.name}</h3>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center">
-                          <Star className="h-4 w-4 text-amber-500 fill-amber-500 mr-1" />
-                          <span className="text-sm font-medium">{doctor.rating}</span>
+                    {/* Avatar */}
+                    <div className="relative -mt-12 px-6">
+                      <Avatar className="h-24 w-24 border-4 border-card shadow-lg">
+                        <AvatarImage src={member.image} alt={member.name} />
+                        <AvatarFallback className="bg-brand-teal text-white text-xl font-semibold">
+                          {member.initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      {member.verified && (
+                        <div className="absolute bottom-0 right-6">
+                          <div className="bg-brand-teal text-white rounded-full p-1">
+                            <CheckCircle className="h-4 w-4" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <CardContent className="p-6 pt-3 flex-1 flex flex-col">
+                      {/* Name & Specialty */}
+                      <div className="mb-3">
+                        <h3 className="text-xl font-semibold text-foreground group-hover:text-brand-teal transition-colors">
+                          {member.name}
+                        </h3>
+                        <p className="text-brand-teal font-medium capitalize">{member.specialty}</p>
+                      </div>
+
+                      {/* Stats Row */}
+                      <div className="flex items-center gap-4 mb-4 text-sm">
+                        <div className="flex items-center gap-1">
+                          <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+                          <span className="font-medium">{member.rating.toFixed(1)}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Clock className="h-4 w-4" />
+                          <span>{member.experience} yrs exp</span>
                         </div>
                       </div>
-                    </div>
 
-                    <p className="text-primary font-medium mb-2">{doctor.specialty}</p>
+                      {/* Bio */}
+                      <p className="text-muted-foreground text-sm mb-4 flex-1 line-clamp-3">
+                        {member.bio}
+                      </p>
 
-                    <div className="flex items-center gap-2 mb-3">
-                      <Award className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">{doctor.experience} experience</span>
-                    </div>
+                      {/* Qualifications */}
+                      {member.qualifications.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-4">
+                          {member.qualifications.slice(0, 3).map((qual: string, i: number) => (
+                            <Badge key={i} variant="secondary" className="text-xs">
+                              {qual}
+                            </Badge>
+                          ))}
+                          {member.qualifications.length > 3 && (
+                            <Badge variant="secondary" className="text-xs">
+                              +{member.qualifications.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
 
-                    {doctor.consultationFee && (
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-sm text-muted-foreground">Consultation Fee:</span>
-                        <span className="text-sm font-medium text-primary">UGX {doctor.consultationFee?.toLocaleString()}</span>
+                      {/* Consultation Fee */}
+                      {member.consultationFee && (
+                        <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+                          <span className="text-xs text-muted-foreground">Consultation Fee</span>
+                          <p className="font-semibold text-brand-teal">
+                            UGX {member.consultationFee.toLocaleString()}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 mt-auto pt-4 border-t">
+                        <Button asChild className="flex-1 bg-brand-teal hover:bg-brand-teal/90">
+                          <Link href={`/appointments?staffProfileId=${member.id}`}>
+                            <Calendar className="h-4 w-4 mr-2" />
+                            Book
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleStartChat(member.id)}
+                          disabled={!currentUser || isCreatingRoom === member.id}
+                          className="border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white"
+                        >
+                          {isCreatingRoom === member.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <MessageSquare className="h-4 w-4" />
+                          )}
+                        </Button>
                       </div>
-                    )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </div>
+      </section>
 
-                    <p className="text-muted-foreground text-sm mb-4 flex-1">
-                      {expandedId === doctor.id ? doctor.bio : `${(doctor.bio || '').substring(0, 80)}...`}
-                    </p>
+      {/* Trust Section */}
+      <section className="py-20 bg-gradient-to-b from-muted/30 to-background">
+        <div className="container-custom">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl font-bold mb-4">Why Patients Trust Our Team</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              We are committed to excellence in healthcare delivery and patient satisfaction.
+            </p>
+          </motion.div>
 
-                    <Button
-                      variant="link"
-                      className="text-primary p-0 h-auto self-start mb-4"
-                      onClick={() => setExpandedId(expandedId === doctor.id ? null : doctor.id)}
-                    >
-                      {expandedId === doctor.id ? 'Show less' : 'Read more'}
-                    </Button>
-
-                    {expandedId === doctor.id && (
-                      <div className="mb-4 space-y-2">
-                        {doctor.qualifications && doctor.qualifications.length > 0 && (
-                          <div>
-                            <h4 className="text-sm font-medium text-foreground mb-1">Qualifications:</h4>
-                            <div className="flex flex-wrap gap-1">
-                              {doctor.qualifications.map((qual: string, index: number) => (
-                                <span key={index} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                  {qual}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {doctor.languages && doctor.languages.length > 0 && (
-                          <div>
-                            <h4 className="text-sm font-medium text-foreground mb-1">Languages:</h4>
-                            <div className="flex flex-wrap gap-1">
-                              {doctor.languages.map((lang: string, index: number) => (
-                                <span key={index} className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                                  {lang}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="flex items-center text-sm text-muted-foreground gap-2 mb-4">
-                      <Calendar className="h-4 w-4 text-primary" />
-                      <span>Available: {doctor.availability}</span>
-                    </div>
-
-                    <div className="flex gap-2 mt-auto">
-                      <Link href={`/appointments?staffProfileId=${doctor.id}`} className="flex-1">
-                        <Button className="w-full btn-primary">Book Appointment</Button>
-                      </Link>
-                      <Button 
-                        variant="outline" 
-                        className="border-primary"
-                        onClick={() => handleStartChat(doctor.id)}
-                        disabled={!currentUser || isCreatingRoom === doctor.id}
-                      >
-                        {isCreatingRoom === doctor.id ? (
-                          <RefreshCw className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Mail className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        )}
-
-        <div className="mt-20">
-          <h2 className="text-2xl font-bold text-center mb-12">Why Patients Trust Our Doctors</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="bg-[hsl(var(--suubi-green-50))] rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
-                <Award className="h-8 w-8 text-primary" />
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="grid md:grid-cols-3 gap-8"
+          >
+            <motion.div variants={itemVariants} className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-brand-teal/10 flex items-center justify-center">
+                <Award className="h-8 w-8 text-brand-teal" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Top Credentials</h3>
-              <p className="text-muted-foreground">Our doctors come from leading medical institutions with extensive training.</p>
-            </div>
+              <p className="text-muted-foreground text-sm">
+                Our doctors come from leading medical institutions with extensive training and certifications.
+              </p>
+            </motion.div>
 
-            <div className="text-center">
-              <div className="bg-[hsl(var(--suubi-green-50))] rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
-                <ThumbsUp className="h-8 w-8 text-primary" />
+            <motion.div variants={itemVariants} className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-brand-eucalyptus/10 flex items-center justify-center">
+                <ThumbsUp className="h-8 w-8 text-brand-eucalyptus" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Patient Satisfaction</h3>
-              <p className="text-muted-foreground">95% of our patients rate their experience as excellent or very good.</p>
-            </div>
+              <h3 className="text-lg font-semibold mb-2">95% Patient Satisfaction</h3>
+              <p className="text-muted-foreground text-sm">
+                The majority of our patients rate their experience as excellent or very good.
+              </p>
+            </motion.div>
 
-            <div className="text-center">
-              <div className="bg-[hsl(var(--suubi-green-50))] rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
-                <Phone className="h-8 w-8 text-primary" />
+            <motion.div variants={itemVariants} className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-brand-amber/10 flex items-center justify-center">
+                <Phone className="h-8 w-8 text-brand-amber" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Always Accessible</h3>
-              <p className="text-muted-foreground">Our doctors provide prompt responses and follow-ups for continuity of care.</p>
-            </div>
-          </div>
+              <p className="text-muted-foreground text-sm">
+                Our team provides prompt responses and follow-ups for continuity of care.
+              </p>
+            </motion.div>
+          </motion.div>
         </div>
-      </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16">
+        <div className="container-custom">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-navy to-brand-teal p-8 md:p-12 text-white"
+          >
+            <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-10" />
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold mb-2">
+                  Ready to Book an Appointment?
+                </h2>
+                <p className="text-white/80">
+                  Schedule a consultation with one of our healthcare professionals today.
+                </p>
+              </div>
+              <Button asChild size="lg" className="bg-white text-brand-navy hover:bg-white/90 shrink-0">
+                <Link href="/appointments">
+                  <Calendar className="mr-2 h-5 w-5" />
+                  Book Now
+                </Link>
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      </section>
     </div>
   );
 }

@@ -1,0 +1,74 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { LucideIcon } from "lucide-react";
+
+interface StatsCardProps {
+  title: string;
+  value: string | number;
+  description?: string;
+  icon: LucideIcon;
+  trend?: {
+    value: number;
+    isPositive: boolean;
+  };
+  className?: string;
+  iconClassName?: string;
+}
+
+export function StatsCard({
+  title,
+  value,
+  description,
+  icon: Icon,
+  trend,
+  className,
+  iconClassName,
+}: StatsCardProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      whileHover={{ y: -4 }}
+    >
+      <Card className={cn("overflow-hidden", className)}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            {title}
+          </CardTitle>
+          <div
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-lg",
+              iconClassName || "bg-brand-teal/10 text-brand-teal"
+            )}
+          >
+            <Icon className="h-5 w-5" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{value}</div>
+          {(description || trend) && (
+            <div className="flex items-center gap-2 mt-1">
+              {trend && (
+                <span
+                  className={cn(
+                    "text-xs font-medium",
+                    trend.isPositive ? "text-green-600" : "text-red-600"
+                  )}
+                >
+                  {trend.isPositive ? "+" : "-"}{Math.abs(trend.value)}%
+                </span>
+              )}
+              {description && (
+                <p className="text-xs text-muted-foreground">{description}</p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}

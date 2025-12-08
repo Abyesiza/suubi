@@ -168,7 +168,7 @@ export const createGalleryItem = mutation({
       tags: args.tags || [],
       createdAt: Date.now(),
       isPublished,
-      uploadedBy: user._id,
+      uploadedById: user._id,
     });
     return galleryId;
   },
@@ -329,63 +329,3 @@ export const getGalleryStats = query({
     };
   },
 });
-
-/**
- * Migration function to convert uploadedBy field to uploadedById in gallery records
- * Run this once after schema update to fix existing data
- */
-export const migrateGalleryUploadedBy = mutation({
-  args: {},
-  returns: v.object({
-    migratedCount: v.number(),
-    errors: v.array(v.string()),
-  }),
-  handler: async (ctx) => {
-    const errors: string[] = [];
-    let migratedCount = 0;
-
-    try {
-      // Get all gallery records
-      const galleryItems = await ctx.db.query("gallery").collect();
-
-      for (const item of galleryItems) {
-        try {
-          // If item has uploadedBy but not uploadedById, try to convert
-          if (item.uploadedBy && !item.uploadedById) {
-            // Try to find the user by clerkId (assuming uploadedBy is a clerkId)
-            const user = await ctx.db
-              .query("users")
-              .withIndex("by_clerkId", (q) => q.eq("clerkId", item.uploadedBy!))
-              .first();
-
-            if (user) {
-              // Update the record to use uploadedById and remove uploadedBy
-              await ctx.db.patch(item._id, {
-                uploadedById: user._id,
-                uploadedBy: undefined, // Remove the old field
-                updatedAt: Date.now(),
-              });
-              migratedCount++;
-            } else {
-              // If user not found, just remove the uploadedBy field
-              await ctx.db.patch(item._id, {
-                uploadedBy: undefined,
-                updatedAt: Date.now(),
-              });
-              migratedCount++;
-            }
-          }
-        } catch (error) {
-          errors.push(`Failed to migrate gallery item ${item._id}: ${error}`);
-        }
-      }
-    } catch (error) {
-      errors.push(`Migration failed: ${error}`);
-    }
-
-    return {
-      migratedCount,
-      errors,
-    };
-  },
-}); 

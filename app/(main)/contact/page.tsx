@@ -5,41 +5,84 @@ import { motion } from 'framer-motion';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Phone, Mail, MapPin, Clock, Send, Check } from 'lucide-react';
-import Lifeline from '@/components/ui/Lifeline';
+import { Phone, Mail, MapPin, Clock, Send, CheckCircle, Sparkles, MessageCircle, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
 
 // Form validation schema
 const contactFormSchema = z.object({
-  name: z.string().min(2, {
-    message: "Name must be at least 2 characters.",
-  }),
-  email: z.string().email({
-    message: "Please enter a valid email address.",
-  }),
-  phone: z.string().min(9, {
-    message: "Please enter a valid Ugandan phone number.",
-  }),
-  subject: z.string().min(1, {
-    message: "Please select a subject.",
-  }),
-  message: z.string().min(10, {
-    message: "Message must be at least 10 characters.",
-  }),
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  phone: z.string().min(9, { message: "Please enter a valid phone number." }),
+  subject: z.string().min(1, { message: "Please select a subject." }),
+  message: z.string().min(10, { message: "Message must be at least 10 characters." }),
 });
 
 type ContactFormValues = z.infer<typeof contactFormSchema>;
 
+const contactInfo = [
+  {
+    icon: MapPin,
+    title: 'Our Location',
+    details: ['Level 1 Ssebowa House', 'Plot 1 Ssekajja Road, Kayunga Central', 'Kayunga, Uganda'],
+    color: 'bg-brand-teal/10 text-brand-teal',
+  },
+  {
+    icon: Phone,
+    title: 'Phone',
+    details: ['Main: +256 787 324 041', 'Emergency: +256 708 726 924'],
+    color: 'bg-brand-eucalyptus/10 text-brand-eucalyptus',
+  },
+  {
+    icon: Mail,
+    title: 'Email',
+    details: ['suubimedcarekayunga@gmail.com'],
+    color: 'bg-brand-orange/10 text-brand-orange',
+  },
+  {
+    icon: Clock,
+    title: 'Operating Hours',
+    details: ['Monday - Sunday: 24 Hours', 'Open every day of the week'],
+    color: 'bg-brand-amber/10 text-brand-amber',
+    badge: 'Open 24/7',
+  },
+];
+
+const subjects = [
+  'General Inquiry',
+  'Appointment Request',
+  'Medical Consultation',
+  'Test Results',
+  'Prescription Refill',
+  'Billing & Insurance',
+  'Emergency Services',
+  'Feedback & Complaints',
+  'Other',
+];
+
 export default function ContactPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Initialize form
+
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(contactFormSchema),
     defaultValues: {
@@ -51,310 +94,356 @@ export default function ContactPage() {
     },
   });
 
-  // Form submission handler
   async function onSubmit(data: ContactFormValues) {
     setIsSubmitting(true);
-    
+
     try {
       const res = await fetch('/api/send-email/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      
+
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData?.error || 'Failed to send message');
       }
-      
-      // Show success message
+
       setIsSubmitted(true);
-      
-      // Reset form after 5 seconds
+      toast.success('Message sent successfully!', {
+        description: 'We will get back to you as soon as possible.',
+      });
+
       setTimeout(() => {
         form.reset();
         setIsSubmitted(false);
       }, 5000);
     } catch (err) {
       console.error('Contact form submission failed:', err);
-      alert(err instanceof Error ? err.message : 'Failed to send your message. Please try again later.');
+      toast.error('Failed to send message', {
+        description: err instanceof Error ? err.message : 'Please try again later.',
+      });
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <div className="min-h-screen py-12 bg-background">
-      <div className="container-custom">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-12"
-        >
-          <h1 className="text-4xl font-bold mb-4 text-dark-purple">Contact Us</h1>
-          <div className="w-48 h-6 mx-auto mb-4">
-            <Lifeline color="#E1AD01" height="12px" variant="minimal" />
-          </div>
-          <p className="text-dark-purple/80 max-w-2xl mx-auto">
-            Have questions or need to schedule an appointment? We're here to help.
-            Reach out to us through the contact form or using our contact information below.
-          </p>
-        </motion.div>
-        
-        <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
-          {/* Contact Form */}
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+      {/* Hero Section */}
+      <section className="relative pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-teal/5 via-transparent to-brand-eucalyptus/5" />
+        <div className="absolute top-20 right-10 w-72 h-72 bg-brand-teal/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 left-10 w-96 h-96 bg-brand-orange/10 rounded-full blur-3xl" />
+
+        <div className="container-custom relative z-10">
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="text-center max-w-4xl mx-auto"
           >
-            <Card className="p-6 border-[#73A580]/30 h-full">
-              <h2 className="text-2xl font-semibold mb-6 text-dark-purple">Get in Touch</h2>
-              
-              {isSubmitted ? (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex flex-col items-center justify-center h-[400px] text-center"
-                >
-                  <div className="w-16 h-16 bg-suubi-green/20 rounded-full flex items-center justify-center mb-4">
-                    <Check className="h-8 w-8 text-suubi-green" />
-                  </div>
-                  <h3 className="text-xl font-medium text-dark-purple mb-2">Message Sent Successfully!</h3>
-                  <p className="text-dark-purple/70">
-                    Thank you for reaching out. We'll get back to you as soon as possible.
-                  </p>
-                </motion.div>
-              ) : (
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-dark-purple">Full Name</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Mukasa John" {...field} className="border-[#73A580]/30 focus-visible:ring-suubi-green" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-dark-purple">Email</FormLabel>
-                            <FormControl>
-                              <Input placeholder="yourname@gmail.com" {...field} className="border-[#73A580]/30 focus-visible:ring-suubi-green" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <FormField
-                        control={form.control}
-                        name="phone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-dark-purple">Phone Number</FormLabel>
-                            <FormControl>
-                              <Input placeholder="+256 700 000 000" {...field} className="border-[#73A580]/30 focus-visible:ring-suubi-green" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="subject"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-dark-purple">Subject</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger className="border-[#73A580]/30 focus:ring-suubi-green">
-                                  <SelectValue placeholder="Select a subject" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="General Inquiry">General Inquiry</SelectItem>
-                                <SelectItem value="Appointment Request">Appointment Request</SelectItem>
-                                <SelectItem value="Medical Consultation">Medical Consultation</SelectItem>
-                                <SelectItem value="Test Results">Test Results</SelectItem>
-                                <SelectItem value="Prescription Refill">Prescription Refill</SelectItem>
-                                <SelectItem value="Billing & Insurance">Billing & Insurance</SelectItem>
-                                <SelectItem value="Emergency Services">Emergency Services</SelectItem>
-                                <SelectItem value="Feedback & Complaints">Feedback & Complaints</SelectItem>
-                                <SelectItem value="Other">Other</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    <FormField
-                      control={form.control}
-                      name="message"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-dark-purple">Message</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="Please describe your medical inquiry or appointment needs..." 
-                              className="min-h-[120px] border-[#73A580]/30 focus-visible:ring-suubi-green" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <Button 
-                      type="submit" 
-                      className="bg-mustard hover:bg-suubi-green text-dark-purple hover:text-white transition-colors w-full"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <span className="animate-spin mr-2">⏳</span> Sending...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4 mr-2" /> Send Message
-                        </>
-                      )}
-                    </Button>
-                  </form>
-                </Form>
-              )}
-            </Card>
-          </motion.div>
-          
-          {/* Contact Information */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <Card className="p-6 border-[#73A580]/30 h-full">
-              <h2 className="text-2xl font-semibold mb-6 text-dark-purple">Contact Information</h2>
-              
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="bg-[#73A580]/20 p-2 rounded-full flex-shrink-0 mt-1">
-                    <MapPin className="h-5 w-5 text-mustard" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-dark-purple mb-1">Our Location</h3>
-                    <p className="text-dark-purple/70">
-                      Level 1 Ssebowa House,<br />
-                      Plot 1 Ssekajja Road, Kayunga Central<br />
-                      Kayunga, Uganda
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-4">
-                  <div className="bg-[#73A580]/20 p-2 rounded-full flex-shrink-0 mt-1">
-                    <Phone className="h-5 w-5 text-mustard" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-dark-purple mb-1">Phone</h3>
-                    <p className="text-dark-purple/70">
-                      Main: +256 787 324 041<br />
-                      Emergency: +256 708 726 924
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-4">
-                  <div className="bg-[#73A580]/20 p-2 rounded-full flex-shrink-0 mt-1">
-                    <Mail className="h-5 w-5 text-mustard" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-dark-purple mb-1">Email</h3>
-                    <p className="text-dark-purple/70">
-                      suubimedcarekayunga@gmail.com
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-4">
-                  <div className="bg-[#73A580]/20 p-2 rounded-full flex-shrink-0 mt-1">
-                    <Clock className="h-5 w-5 text-mustard" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-dark-purple mb-1">Operating Hours</h3>
-                    <div className="text-dark-purple/70 space-y-1">
-                      <div className="flex justify-between">
-                        <span>Monday - Sunday:</span>
-                        <span>24 Hours</span>
-                      </div>
-                      <div className="text-sm text-mustard font-medium">
-                        Open every day of the week
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Map or Location Indicator */}
-              <div className="mt-8 border border-[#73A580]/30 rounded-md overflow-hidden h-[200px] relative">
-                <div className="absolute inset-0 bg-[#73A580]/10 flex items-center justify-center">
-                  <p className="text-dark-purple/50 text-center px-4">
-                    Map location will be displayed here.<br />
-                    <span className="text-sm">(To implement with Google Maps or similar service)</span>
-                  </p>
-                </div>
-                {/* Decorative Lifeline */}
-                <div className="absolute bottom-0 left-0 right-0 h-6">
-                  <Lifeline color="#E1AD01" height="12px" variant="thin" className="opacity-30" />
-                </div>
-              </div>
-            </Card>
+            <motion.div variants={itemVariants}>
+              <Badge className="mb-4 bg-brand-teal/10 text-brand-teal hover:bg-brand-teal/20">
+                <Sparkles className="w-3 h-3 mr-1" />
+                Get In Touch
+              </Badge>
+            </motion.div>
+
+            <motion.h1
+              variants={itemVariants}
+              className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6"
+            >
+              Contact{' '}
+              <span className="bg-gradient-to-r from-brand-teal to-brand-eucalyptus bg-clip-text text-transparent">
+                Us
+              </span>
+            </motion.h1>
+
+            <motion.p
+              variants={itemVariants}
+              className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto"
+            >
+              Have questions or need to schedule an appointment? We're here to help.
+              Reach out to us through the contact form or using our contact information below.
+            </motion.p>
           </motion.div>
         </div>
-        
-        {/* CTA Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="mt-16 bg-[#73A580]/20 rounded-xl p-8 text-center relative overflow-hidden"
-        >
-          <div className="absolute top-0 left-0 right-0 h-8">
-            <Lifeline color="#E1AD01" height="16px" variant="thin" className="opacity-40" />
+      </section>
+
+      {/* Contact Cards */}
+      <section className="py-8">
+        <div className="container-custom">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6"
+          >
+            {contactInfo.map((info, index) => (
+              <motion.div key={index} variants={itemVariants} whileHover={{ y: -5 }}>
+                <Card className="h-full hover:shadow-lg transition-all duration-300">
+                  <CardContent className="p-4 md:p-6">
+                    <div className={`w-12 h-12 rounded-xl ${info.color} flex items-center justify-center mb-4`}>
+                      <info.icon className="h-6 w-6" />
+                    </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-semibold">{info.title}</h3>
+                      {info.badge && (
+                        <Badge className="bg-brand-eucalyptus/10 text-brand-eucalyptus text-xs">
+                          {info.badge}
+                        </Badge>
+                      )}
+                    </div>
+                    {info.details.map((detail, i) => (
+                      <p key={i} className="text-sm text-muted-foreground">
+                        {detail}
+                      </p>
+                    ))}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Main Contact Section */}
+      <section className="py-12 md:py-20">
+        <div className="container-custom">
+          <div className="grid lg:grid-cols-2 gap-8 md:gap-12">
+            {/* Contact Form */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <Card className="overflow-hidden">
+                <div className="h-2 bg-gradient-to-r from-brand-teal to-brand-eucalyptus" />
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageCircle className="h-5 w-5 text-brand-teal" />
+                    Send Us a Message
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isSubmitted ? (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex flex-col items-center justify-center py-16 text-center"
+                    >
+                      <div className="w-16 h-16 bg-brand-eucalyptus/10 rounded-full flex items-center justify-center mb-4">
+                        <CheckCircle className="h-8 w-8 text-brand-eucalyptus" />
+                      </div>
+                      <h3 className="text-xl font-semibold mb-2">Message Sent!</h3>
+                      <p className="text-muted-foreground">
+                        Thank you for reaching out. We'll get back to you as soon as possible.
+                      </p>
+                    </motion.div>
+                  ) : (
+                    <Form {...form}>
+                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Full Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Mukasa John" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="yourname@gmail.com" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="phone"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Phone Number</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="+256 700 000 000" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="subject"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Subject</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select a subject" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {subjects.map((subject) => (
+                                      <SelectItem key={subject} value={subject}>
+                                        {subject}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <FormField
+                          control={form.control}
+                          name="message"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Message</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Please describe your inquiry or needs..."
+                                  className="min-h-[120px] resize-none"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <Button
+                          type="submit"
+                          className="w-full bg-brand-teal hover:bg-brand-teal/90"
+                          disabled={isSubmitting}
+                          size="lg"
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <span className="animate-spin mr-2">⏳</span>
+                              Sending...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="h-4 w-4 mr-2" />
+                              Send Message
+                            </>
+                          )}
+                        </Button>
+                      </form>
+                    </Form>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Map & Emergency */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="space-y-6"
+            >
+              {/* Map Placeholder */}
+              <Card className="overflow-hidden">
+                <div className="relative h-[300px] bg-muted">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <MapPin className="h-12 w-12 text-brand-teal mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        Level 1 Ssebowa House<br />
+                        Plot 1 Ssekajja Road<br />
+                        Kayunga Central, Uganda
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Emergency Card */}
+              <Card className="overflow-hidden bg-gradient-to-r from-brand-navy to-brand-teal text-white">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-xl bg-white/10">
+                      <AlertCircle className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold mb-2">Need Urgent Care?</h3>
+                      <p className="text-white/80 mb-4">
+                        Our emergency services are available 24/7. For urgent medical attention,
+                        please call our emergency line immediately.
+                      </p>
+                      <Button asChild size="lg" className="bg-white text-brand-navy hover:bg-white/90">
+                        <a href="tel:+256708726924">
+                          <Phone className="h-4 w-4 mr-2" />
+                          +256 708 726 924
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Quick Links */}
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="font-semibold mb-4">Quick Actions</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button asChild variant="outline" className="justify-start">
+                      <a href="/appointments">
+                        <Clock className="h-4 w-4 mr-2" />
+                        Book Appointment
+                      </a>
+                    </Button>
+                    <Button asChild variant="outline" className="justify-start">
+                      <a href="/services">
+                        <MapPin className="h-4 w-4 mr-2" />
+                        Our Services
+                      </a>
+                    </Button>
+                    <Button asChild variant="outline" className="justify-start">
+                      <a href="/staff">
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Find a Doctor
+                      </a>
+                    </Button>
+                    <Button asChild variant="outline" className="justify-start">
+                      <a href="/health-assessment">
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Health Check
+                      </a>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
           </div>
-          
-          <div className="max-w-2xl mx-auto py-6">
-            <h2 className="text-2xl font-bold mb-4 text-dark-purple">Need Urgent Care?</h2>
-            <p className="text-dark-purple/80 mb-6">
-              Our emergency services are available 24/7. For urgent medical attention, 
-              please call our emergency line or visit our facility immediately.
-            </p>
-            <Button className="bg-mustard hover:bg-suubi-green text-dark-purple hover:text-white transition-colors px-8">
-              Call Emergency: +256 708 726 924
-            </Button>
-          </div>
-          
-          <div className="absolute bottom-0 left-0 right-0 h-8">
-            <Lifeline color="#E1AD01" height="16px" variant="thin" className="opacity-40 transform rotate-180" />
-          </div>
-        </motion.div>
-      </div>
+        </div>
+      </section>
     </div>
   );
-} 
+}

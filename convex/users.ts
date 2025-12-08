@@ -39,7 +39,6 @@ export const getCurrentUser = query({
       currentMedications: v.optional(v.array(v.string())),
       createdAt: v.optional(v.number()),
       updatedAt: v.optional(v.number()),
-      role: v.optional(v.string()), // Legacy field for existing data
     }),
     v.null()
   ),
@@ -970,171 +969,92 @@ export const deleteStaffProfile = mutation({
   },
 });
 
-// ===== MIGRATION FUNCTIONS =====
-
 /**
- * Migrate existing users to new schema (run once after schema update)
- * This function handles users who are missing createdAt field
+ * Get current user with role and dashboard path
+ * This is optimized for navbar/UI use - returns user info with their role-based dashboard path
  */
-export const migrateUsersToNewSchema = mutation({
-  args: {},
-  returns: v.object({
-    migratedCount: v.number(),
-    errors: v.array(v.string()),
-  }),
-  handler: async (ctx) => {
-    const errors: string[] = [];
-    let migratedCount = 0;
-
-    try {
-      // Get all users
-      const allUsers = await ctx.db.query("users").collect();
-
-      for (const user of allUsers) {
-        try {
-          const updates: any = {};
-
-          // Add createdAt if missing
-          if (!user.createdAt) {
-            updates.createdAt = user._creationTime;
-          }
-
-          // Update user if there are changes
-          if (Object.keys(updates).length > 0) {
-            await ctx.db.patch(user._id, updates);
-            migratedCount++;
-          }
-        } catch (error) {
-          errors.push(`Failed to migrate user ${user._id}: ${error}`);
-        }
-      }
-    } catch (error) {
-      errors.push(`Migration failed: ${error}`);
-    }
-
-    return {
-      migratedCount,
-      errors,
-    };
+export const getCurrentUserWithRole = query({
+  args: {
+    clerkId: v.optional(v.string()),
   },
-});
+  returns: v.union(
+    v.object({
+      _id: v.id("users"),
+      email: v.string(),
+      firstName: v.optional(v.string()),
+      lastName: v.optional(v.string()),
+      imageUrl: v.optional(v.string()),
+      role: v.union(
+        v.literal("patient"),
+        v.literal("admin"),
+        v.literal("doctor"),
+        v.literal("nurse"),
+        v.literal("allied_health"),
+        v.literal("support_staff"),
+        v.literal("administrative_staff"),
+        v.literal("technical_staff"),
+        v.literal("training_research_staff"),
+        v.literal("superadmin"),
+        v.literal("editor")
+      ),
+      dashboardPath: v.string(),
+      staffProfile: v.optional(v.object({
+        _id: v.id("staff_profiles"),
+        specialty: v.optional(v.string()),
+        verified: v.boolean(),
+      })),
+    }),
+    v.null()
+  ),
+  handler: async (ctx, args) => {
+    if (!args.clerkId) {
+      return null;
+    }
 
-/**
- * Clean up any legacy data from users table (run after migration)
- * This function can be used for future cleanup tasks
- */
-export const cleanupLegacyData = mutation({
-  args: {},
-  returns: v.object({
-    cleanedCount: v.number(),
-    errors: v.array(v.string()),
-  }),
-  handler: async (ctx) => {
-    const errors: string[] = [];
-    let cleanedCount = 0;
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId!))
+      .first();
 
-    try {
-      // Get all users
-      const allUsers = await ctx.db.query("users").collect();
+    if (!user) {
+      return null;
+    }
 
-      for (const user of allUsers) {
-        try {
-          const updates: any = {};
+    // Check for staff profile
+    const staffProfile = await ctx.db
+      .query("staff_profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
 
-          // Add any missing required fields or cleanup logic here
-          // For now, this is a placeholder for future cleanup tasks
+    // Determine role and dashboard path
+    let role: "patient" | "admin" | "doctor" | "nurse" | "allied_health" | "support_staff" | "administrative_staff" | "technical_staff" | "training_research_staff" | "superadmin" | "editor" = "patient";
+    let dashboardPath = "/patient";
 
-          // Update user if there are changes
-          if (Object.keys(updates).length > 0) {
-            await ctx.db.patch(user._id, updates);
-            cleanedCount++;
-          }
-        } catch (error) {
-          errors.push(`Failed to clean user ${user._id}: ${error}`);
-        }
+    if (staffProfile) {
+      role = staffProfile.role;
+      
+      // Admin-level roles go to /admin
+      if (["admin", "superadmin"].includes(staffProfile.role)) {
+        dashboardPath = "/admin";
+      } else {
+        // All other staff roles go to /staff-portal
+        dashboardPath = "/staff-portal";
       }
-    } catch (error) {
-      errors.push(`Cleanup failed: ${error}`);
     }
 
     return {
-      cleanedCount,
-      errors,
-    };
-  },
-});
-
-/**
- * Migration function to add createdAt field and handle role field in users records
- * Run this once after schema update to fix existing data
- */
-export const migrateUsersFields = mutation({
-  args: {},
-  returns: v.object({
-    migratedCount: v.number(),
-    errors: v.array(v.string()),
-  }),
-  handler: async (ctx) => {
-    const errors: string[] = [];
-    let migratedCount = 0;
-
-    try {
-      // Get all users records
-      const users = await ctx.db.query("users").collect();
-
-      for (const user of users) {
-        try {
-          // Check if user needs migration
-          const needsCreatedAtMigration = !user.createdAt;
-          const hasRoleField = user.role !== undefined;
-          
-          if (needsCreatedAtMigration || hasRoleField) {
-            const patchData: any = {
-              updatedAt: Date.now(),
-            };
-
-            // Handle createdAt migration
-            if (needsCreatedAtMigration) {
-              patchData.createdAt = user._creationTime;
-            }
-
-            // Handle role field - if user has a role, create a staff profile
-            if (hasRoleField && user.role) {
-              // Check if staff profile already exists
-              const existingStaffProfile = await ctx.db
-                .query("staff_profiles")
-                .withIndex("by_userId", (q) => q.eq("userId", user._id))
-                .first();
-
-              if (!existingStaffProfile) {
-                // Create staff profile from user role
-                await ctx.db.insert("staff_profiles", {
-                  userId: user._id,
-                  role: user.role as any, // Cast to the role type
-                  isAvailable: true,
-                  verified: false, // Default to unverified
-                  createdAt: user._creationTime,
-                });
-              }
-              
-              // Remove the role field from user
-              patchData.role = undefined;
-            }
-
-            await ctx.db.patch(user._id, patchData);
-            migratedCount++;
-          }
-        } catch (error) {
-          errors.push(`Failed to migrate user ${user._id}: ${error}`);
-        }
-      }
-    } catch (error) {
-      errors.push(`Migration failed: ${error}`);
-    }
-
-    return {
-      migratedCount,
-      errors,
+      _id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      imageUrl: user.imageUrl,
+      role,
+      dashboardPath,
+      staffProfile: staffProfile ? {
+        _id: staffProfile._id,
+        specialty: staffProfile.specialty,
+        verified: staffProfile.verified,
+      } : undefined,
     };
   },
 });

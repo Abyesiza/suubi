@@ -17,6 +17,8 @@ import type * as appointments from "../appointments.js";
 import type * as availableTimes from "../availableTimes.js";
 import type * as crons from "../crons.js";
 import type * as gallery from "../gallery.js";
+import type * as helpers_permissions from "../helpers/permissions.js";
+import type * as helpers_validators from "../helpers/validators.js";
 import type * as messages from "../messages.js";
 import type * as news from "../news.js";
 import type * as newsemail from "../newsemail.js";
@@ -41,6 +43,8 @@ declare const fullApi: ApiFromModules<{
   availableTimes: typeof availableTimes;
   crons: typeof crons;
   gallery: typeof gallery;
+  "helpers/permissions": typeof helpers_permissions;
+  "helpers/validators": typeof helpers_validators;
   messages: typeof messages;
   news: typeof news;
   newsemail: typeof newsemail;

@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc } from "./_generated/dataModel";
+import { getStaffProfile, canManageContent, isAdmin } from "./helpers/permissions";
 
 // Get all approved programs, sorted by startDate descending
 export const getApprovedPrograms = query({
@@ -74,7 +75,7 @@ export const createProgram = mutation({
       v.literal("cancelled"),
       v.literal("postponed")
     ),
-    contactPerson: v.optional(v.string()),
+    contactPersonId: v.optional(v.id("users")),
     contactPhone: v.optional(v.string()),
     contactEmail: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
@@ -94,14 +95,16 @@ export const createProgram = mutation({
       .unique();
     if (!user) throw new Error("User not found");
 
-    // Only allow editor, admin, superadmin to create programs
-    if (!user.role || !["editor", "admin", "superadmin"].includes(user.role)) {
+    // Check if user can manage content using staff_profiles
+    const hasPermission = await canManageContent(ctx, user._id);
+    if (!hasPermission) {
       throw new Error("You do not have permission to create programs");
     }
 
     // Only admin and superadmin can set approved to true
     let approved = false;
-    if (args.approved && user.role && ["admin", "superadmin"].includes(user.role)) {
+    const userIsAdmin = await isAdmin(ctx, user._id);
+    if (args.approved && userIsAdmin) {
       approved = args.approved;
     }
 
@@ -117,7 +120,7 @@ export const createProgram = mutation({
       createdAt: args.createdAt,
       updatedAt: args.updatedAt,
       status: args.status,
-      contactPerson: args.contactPerson,
+      contactPersonId: args.contactPersonId,
       contactPhone: args.contactPhone,
       contactEmail: args.contactEmail,
       tags: args.tags,
@@ -149,14 +152,18 @@ export const deleteProgram = mutation({
     const program = await ctx.db.get(id);
     if (!program) throw new Error("Program not found");
 
+    // Check permissions using staff_profiles
+    const userIsAdmin = await isAdmin(ctx, user._id);
+    const hasContentPermission = await canManageContent(ctx, user._id);
+
     // If approved, only admin and superadmin can delete
     if (program.approved) {
-      if (!user.role || !["admin", "superadmin"].includes(user.role)) {
+      if (!userIsAdmin) {
         throw new Error("Only admin or superadmin can delete approved programs");
       }
     } else {
       // If not approved, allow editor, admin, superadmin
-      if (!user.role || !["editor", "admin", "superadmin"].includes(user.role)) {
+      if (!hasContentPermission) {
         throw new Error("You do not have permission to delete this program");
       }
     }
@@ -186,7 +193,7 @@ export const updateProgram = mutation({
       v.literal("cancelled"),
       v.literal("postponed")
     )),
-    contactPerson: v.optional(v.string()),
+    contactPersonId: v.optional(v.id("users")),
     contactPhone: v.optional(v.string()),
     contactEmail: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
@@ -203,7 +210,10 @@ export const updateProgram = mutation({
       .withIndex("by_clerkId", q => q.eq("clerkId", identity.subject))
       .unique();
     if (!user) throw new Error("User not found");
-    if (!user.role || !["editor", "admin", "superadmin"].includes(user.role)) {
+    
+    // Check permissions using staff_profiles
+    const hasContentPermission = await canManageContent(ctx, user._id);
+    if (!hasContentPermission) {
       throw new Error("You do not have permission to update programs");
     }
 
@@ -221,7 +231,7 @@ export const updateProgram = mutation({
       ...(args.images !== undefined && { images: args.images }),
       ...(args.videos !== undefined && { videos: args.videos }),
       ...(args.status !== undefined && { status: args.status }),
-      ...(args.contactPerson !== undefined && { contactPerson: args.contactPerson }),
+      ...(args.contactPersonId !== undefined && { contactPersonId: args.contactPersonId }),
       ...(args.contactPhone !== undefined && { contactPhone: args.contactPhone }),
       ...(args.contactEmail !== undefined && { contactEmail: args.contactEmail }),
       ...(args.tags !== undefined && { tags: args.tags }),
@@ -230,9 +240,10 @@ export const updateProgram = mutation({
       updatedAt: Date.now(),
     };
 
-    // Handle approval rights
+    // Handle approval rights using staff_profiles
+    const userIsAdmin = await isAdmin(ctx, user._id);
     if (args.approved !== undefined) {
-      if (user.role && ["admin", "superadmin"].includes(user.role)) {
+      if (userIsAdmin) {
         patchData.approved = args.approved;
       } else if (program.approved && !args.approved) {
         // Allow editors to un-approve a program
@@ -262,73 +273,5 @@ export const getAllPrograms = query({
   args: {},
   handler: async (ctx) => {
     return await ctx.db.query("programs").order("desc").collect();
-  },
-});
-
-/**
- * Migration function to convert contactPerson field to contactPersonId in programs records
- * Run this once after schema update to fix existing data
- */
-export const migrateProgramsContactPerson = mutation({
-  args: {},
-  returns: v.object({
-    migratedCount: v.number(),
-    errors: v.array(v.string()),
-  }),
-  handler: async (ctx) => {
-    const errors: string[] = [];
-    let migratedCount = 0;
-
-    try {
-      // Get all programs records
-      const programs = await ctx.db.query("programs").collect();
-
-      for (const program of programs) {
-        try {
-          // Check if program needs migration
-          const needsContactPersonMigration = program.contactPerson && !program.contactPersonId;
-          const needsCreatedAtMigration = !program.createdAt;
-          
-          if (needsContactPersonMigration || needsCreatedAtMigration) {
-            const patchData: any = {
-              updatedAt: Date.now(),
-            };
-
-            // Handle contactPerson migration
-            if (needsContactPersonMigration) {
-              // Try to find the user by clerkId (assuming contactPerson is a clerkId)
-              const user = await ctx.db
-                .query("users")
-                .withIndex("by_clerkId", (q) => q.eq("clerkId", program.contactPerson!))
-                .first();
-
-              if (user) {
-                patchData.contactPersonId = user._id;
-                patchData.contactPerson = undefined; // Remove the old field
-              } else {
-                patchData.contactPerson = undefined; // Remove the old field
-              }
-            }
-
-            // Handle createdAt migration
-            if (needsCreatedAtMigration) {
-              patchData.createdAt = program._creationTime;
-            }
-
-            await ctx.db.patch(program._id, patchData);
-            migratedCount++;
-          }
-        } catch (error) {
-          errors.push(`Failed to migrate program ${program._id}: ${error}`);
-        }
-      }
-    } catch (error) {
-      errors.push(`Migration failed: ${error}`);
-    }
-
-    return {
-      migratedCount,
-      errors,
-    };
   },
 });

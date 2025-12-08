@@ -26,7 +26,6 @@ export default defineSchema({
     // Common fields
     createdAt: v.optional(v.number()),             // Made optional to handle existing data
     updatedAt: v.optional(v.number()),         // When the user was last updated
-    role: v.optional(v.string()),              // Legacy field for existing data
   })
   .index("by_clerkId", ["clerkId"])
   .index("by_email", ["email"])               // Added email index for lookups
@@ -36,8 +35,7 @@ export default defineSchema({
     title: v.string(),             // Headline of the news article
     content: v.string(),           // Main body/content
     summary: v.string(),           // Short summary or excerpt
-    authorId: v.optional(v.id("users")), // Made optional to handle existing data
-    author: v.optional(v.string()), // Legacy field for existing data
+    authorId: v.optional(v.id("users")), // Reference to the author
     images: v.array(v.string()),   // List of image URLs
     videos: v.optional(v.array(v.string())), // Video URLs (optional array)
     category: v.union(
@@ -95,8 +93,7 @@ export default defineSchema({
       v.literal("cancelled"),
       v.literal("postponed")
     ),
-    contactPersonId: v.optional(v.id("users")), // Changed to reference user ID
-    contactPerson: v.optional(v.string()), // Legacy field for existing data
+    contactPersonId: v.optional(v.id("users")), // Reference to the contact person
     contactPhone: v.optional(v.string()), // Optional phone number
     contactEmail: v.optional(v.string()), // Optional email
     tags: v.optional(v.array(v.string())),// E.g. ["nutrition", "education"]
@@ -157,8 +154,7 @@ export default defineSchema({
     createdAt: v.number(),               // When the record was created
     updatedAt: v.optional(v.number()),   // When the record was last updated
     isPublished: v.boolean(),            // Whether the media is published/visible
-    uploadedById: v.optional(v.id("users")), // Changed to reference user ID
-    uploadedBy: v.optional(v.string()),      // Legacy field for existing data
+    uploadedById: v.optional(v.id("users")), // Reference to the uploader
   })
   .index("by_type", ["type"])
   .index("by_category", ["category"])
@@ -275,8 +271,7 @@ export default defineSchema({
 
   // Available Times table
   availableTimes: defineTable({
-    staffProfileId: v.optional(v.id("staff_profiles")), // Made optional to handle existing data
-    userId: v.optional(v.id("users")), // Legacy field for existing data
+    staffProfileId: v.id("staff_profiles"), // Reference to the staff profile
     dayOfWeek: v.optional(v.union(        // Made optional for one-off dates
       v.literal("Monday"),
       v.literal("Tuesday"),
@@ -290,20 +285,18 @@ export default defineSchema({
     endTime: v.string(),                  // End time of the slot (e.g., "17:00")
     isRecurring: v.boolean(),             // True if this slot recurs weekly
     date: v.optional(v.number()),         // Specific date for one-off slots (timestamp)
-    isAvailable: v.optional(v.boolean()), // Made optional to handle existing data
+    isAvailable: v.boolean(),             // Availability status
     createdAt: v.number(),                // When the slot was created
     updatedAt: v.optional(v.number()),    // When the slot was last updated
   })
   .index("by_staffProfileId", ["staffProfileId"])
-  .index("by_userId", ["userId"]) // Legacy index for existing data
   .index("by_dayOfWeek", ["dayOfWeek"])
   .index("by_isRecurring", ["isRecurring"])
   .index("by_date", ["date"])
   .index("by_isAvailable", ["isAvailable"])
   .index("by_staffProfileId_dayOfWeek", ["staffProfileId", "dayOfWeek"])
   .index("by_staffProfileId_date", ["staffProfileId", "date"])
-  .index("by_staffProfileId_isAvailable", ["staffProfileId", "isAvailable"])
-  .index("by_userId_dayOfWeek", ["userId", "dayOfWeek"]), // Legacy index
+  .index("by_staffProfileId_isAvailable", ["staffProfileId", "isAvailable"]),
 
   // Appointments table
   appointments: defineTable({

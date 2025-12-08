@@ -1407,6 +1407,339 @@ export const getAvailableAppointmentSlots = query({
 });
 
 /**
+ * Get clinic-wide available time slots for a specific date (aggregated from all medical staff)
+ * This is used when patients book without selecting a specific doctor
+ */
+export const getClinicAvailableSlots = query({
+  args: {
+    date: v.number(), // Date timestamp
+    appointmentDuration: v.optional(v.number()), // Duration in minutes, defaults to 30
+  },
+  returns: v.array(v.object({
+    startTime: v.string(),
+    endTime: v.string(),
+    displayTime: v.string(),
+    isAvailable: v.boolean(),
+    timestamp: v.number(),
+    availableDoctorsCount: v.number(),
+  })),
+  handler: async (ctx, args) => {
+    const duration = args.appointmentDuration || 30;
+    const appointmentDate = new Date(args.date);
+    const dayOfWeek = appointmentDate.toLocaleDateString('en-US', { weekday: 'long' }) as 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
+
+    // Get all medical staff profiles (doctors, nurses, allied_health)
+    const medicalProfiles = await ctx.db
+      .query("staff_profiles")
+      .filter((q: any) =>
+        q.or(
+          q.eq(q.field("role"), "doctor"),
+          q.eq(q.field("role"), "nurse"),
+          q.eq(q.field("role"), "allied_health")
+        )
+      )
+      .collect();
+
+    if (medicalProfiles.length === 0) {
+      return [];
+    }
+
+    // Generate all possible time slots for clinic hours (6 AM to 10 PM)
+    const clinicSlots: Map<string, { 
+      startTime: string; 
+      endTime: string; 
+      timestamp: number;
+      availableDoctors: Set<string>;
+    }> = new Map();
+
+    // Generate 30-minute slots from 6 AM to 10 PM
+    for (let hour = 6; hour < 22; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const startTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const endMinute = minute + duration;
+        const endHour = hour + Math.floor(endMinute / 60);
+        const endMin = endMinute % 60;
+        const endTime = `${endHour.toString().padStart(2, '0')}:${endMin.toString().padStart(2, '0')}`;
+        
+        const slotDateTime = new Date(args.date);
+        slotDateTime.setHours(hour, minute, 0, 0);
+        
+        clinicSlots.set(startTime, {
+          startTime,
+          endTime,
+          timestamp: slotDateTime.getTime(),
+          availableDoctors: new Set(),
+        });
+      }
+    }
+
+    // Check each medical staff's availability for each slot
+    for (const profile of medicalProfiles) {
+      // Get recurring slots for this day of week
+      const recurringSlots = await ctx.db
+        .query("availableTimes")
+        .withIndex("by_staffProfileId_dayOfWeek", (q) =>
+          q.eq("staffProfileId", profile._id).eq("dayOfWeek", dayOfWeek)
+        )
+        .filter((q: any) => q.eq(q.field("isRecurring"), true))
+        .collect();
+
+      // Get specific date slots
+      const specificSlots = await ctx.db
+        .query("availableTimes")
+        .withIndex("by_staffProfileId_date", (q) =>
+          q.eq("staffProfileId", profile._id).eq("date", args.date)
+        )
+        .collect();
+
+      const allSlots = [...recurringSlots, ...specificSlots];
+
+      // Mark slots as available for this doctor
+      for (const slot of allSlots) {
+        if (!slot.isAvailable) continue;
+        
+        const slotStartMinutes = timeStringToMinutes(slot.startTime);
+        let slotEndMinutes = timeStringToMinutes(slot.endTime);
+        
+        if (slotEndMinutes <= slotStartMinutes) {
+          slotEndMinutes += 24 * 60;
+        }
+
+        // Check which clinic slots fall within this doctor's availability
+        for (const [key, clinicSlot] of clinicSlots) {
+          const clinicStartMinutes = timeStringToMinutes(clinicSlot.startTime);
+          const clinicEndMinutes = clinicStartMinutes + duration;
+
+          if (clinicStartMinutes >= slotStartMinutes && clinicEndMinutes <= slotEndMinutes) {
+            // Check for conflicts with existing appointments
+            const hasConflict = await checkAppointmentConflict(
+              ctx,
+              profile._id,
+              clinicSlot.timestamp,
+              duration
+            );
+
+            if (!hasConflict) {
+              clinicSlot.availableDoctors.add(profile._id);
+            }
+          }
+        }
+      }
+    }
+
+    // Convert to array and sort
+    const result = Array.from(clinicSlots.values())
+      .map(slot => ({
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        displayTime: `${slot.startTime} - ${slot.endTime}`,
+        isAvailable: slot.availableDoctors.size > 0,
+        timestamp: slot.timestamp,
+        availableDoctorsCount: slot.availableDoctors.size,
+      }))
+      .filter(slot => {
+        // Only show future slots if today
+        const now = Date.now();
+        return slot.timestamp > now;
+      })
+      .sort((a, b) => timeStringToMinutes(a.startTime) - timeStringToMinutes(b.startTime));
+
+    return result;
+  },
+});
+
+/**
+ * Create appointment with auto-assignment to an available doctor
+ * This is used when patients book without selecting a specific doctor
+ */
+export const createAppointmentWithAutoAssign = mutation({
+  args: {
+    patientId: v.id("users"),
+    appointmentDate: v.number(),
+    duration: v.optional(v.number()),
+    appointmentType: v.optional(v.union(
+      v.literal("consultation"),
+      v.literal("follow_up"),
+      v.literal("emergency"),
+      v.literal("routine_checkup"),
+      v.literal("specialist_referral"),
+      v.literal("telemedicine"),
+      v.literal("in_person")
+    )),
+    reason: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    symptoms: v.optional(v.array(v.string())),
+    priority: v.optional(v.union(
+      v.literal("low"),
+      v.literal("medium"),
+      v.literal("high"),
+      v.literal("urgent")
+    )),
+    preferredStaffProfileId: v.optional(v.id("staff_profiles")), // Optional preference
+    createdById: v.id("users"),
+  },
+  returns: v.object({
+    appointmentId: v.id("appointments"),
+    assignedStaffProfileId: v.id("staff_profiles"),
+  }),
+  handler: async (ctx, args) => {
+    const duration = args.duration || 30;
+    
+    // Verify patient exists
+    const patient = await ctx.db.get(args.patientId);
+    if (!patient) {
+      throw new Error("Patient not found");
+    }
+
+    const appointmentDate = new Date(args.appointmentDate);
+    const dayOfWeek = appointmentDate.toLocaleDateString('en-US', { weekday: 'long' }) as 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
+
+    // Find an available medical staff for this time slot
+    let assignedStaffProfile: any = null;
+
+    // If patient has a preference, try that first
+    if (args.preferredStaffProfileId) {
+      const preferredProfile = await ctx.db.get(args.preferredStaffProfileId);
+      if (preferredProfile && ["doctor", "nurse", "allied_health"].includes(preferredProfile.role)) {
+        const isAvailable = await checkDoctorAvailability(ctx, args.preferredStaffProfileId, args.appointmentDate, duration);
+        const hasConflict = await checkAppointmentConflict(ctx, args.preferredStaffProfileId, args.appointmentDate, duration);
+        
+        if (isAvailable && !hasConflict) {
+          assignedStaffProfile = preferredProfile;
+        }
+      }
+    }
+
+    // If no preference or preference unavailable, find any available doctor
+    if (!assignedStaffProfile) {
+      const medicalProfiles = await ctx.db
+        .query("staff_profiles")
+        .filter((q: any) =>
+          q.or(
+            q.eq(q.field("role"), "doctor"),
+            q.eq(q.field("role"), "nurse"),
+            q.eq(q.field("role"), "allied_health")
+          )
+        )
+        .collect();
+
+      // Prioritize doctors, then nurses, then allied health
+      const sortedProfiles = medicalProfiles.sort((a, b) => {
+        const priority: Record<string, number> = { doctor: 0, nurse: 1, allied_health: 2 };
+        return (priority[a.role] ?? 3) - (priority[b.role] ?? 3);
+      });
+
+      for (const profile of sortedProfiles) {
+        const isAvailable = await checkDoctorAvailability(ctx, profile._id, args.appointmentDate, duration);
+        const hasConflict = await checkAppointmentConflict(ctx, profile._id, args.appointmentDate, duration);
+        
+        if (isAvailable && !hasConflict) {
+          assignedStaffProfile = profile;
+          break;
+        }
+      }
+    }
+
+    if (!assignedStaffProfile) {
+      throw new Error("No medical staff available at the requested time. Please try a different time slot.");
+    }
+
+    // Create the appointment
+    const appointmentId = await ctx.db.insert("appointments", {
+      patientId: args.patientId,
+      staffProfileId: assignedStaffProfile._id,
+      appointmentDate: args.appointmentDate,
+      duration,
+      status: "pending", // Always starts as pending for admin review
+      appointmentType: args.appointmentType,
+      reason: args.reason,
+      notes: args.notes,
+      symptoms: args.symptoms,
+      priority: args.priority || "medium",
+      createdById: args.createdById,
+      createdAt: Date.now(),
+    });
+
+    return {
+      appointmentId,
+      assignedStaffProfileId: assignedStaffProfile._id,
+    };
+  },
+});
+
+/**
+ * Admin mutation to reassign an appointment to a different staff member
+ */
+export const reassignAppointment = mutation({
+  args: {
+    appointmentId: v.id("appointments"),
+    newStaffProfileId: v.id("staff_profiles"),
+    reassignedBy: v.id("users"),
+    reason: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    // Verify admin has permission
+    const adminProfile = await ctx.db
+      .query("staff_profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", args.reassignedBy))
+      .first();
+
+    if (!adminProfile || !["admin", "superadmin"].includes(adminProfile.role)) {
+      throw new Error("Unauthorized: Only admins can reassign appointments");
+    }
+
+    const appointment = await ctx.db.get(args.appointmentId);
+    if (!appointment) {
+      throw new Error("Appointment not found");
+    }
+
+    if (appointment.status === "completed" || appointment.status === "cancelled") {
+      throw new Error("Cannot reassign completed or cancelled appointments");
+    }
+
+    // Verify new staff profile exists and is medical staff
+    const newStaffProfile = await ctx.db.get(args.newStaffProfileId);
+    if (!newStaffProfile) {
+      throw new Error("New staff member not found");
+    }
+
+    if (!["doctor", "nurse", "allied_health"].includes(newStaffProfile.role)) {
+      throw new Error("Can only assign to medical staff (doctor, nurse, or allied health)");
+    }
+
+    // Check if new staff is available
+    const isAvailable = await checkDoctorAvailability(
+      ctx,
+      args.newStaffProfileId,
+      appointment.appointmentDate,
+      appointment.duration
+    );
+
+    const hasConflict = await checkAppointmentConflict(
+      ctx,
+      args.newStaffProfileId,
+      appointment.appointmentDate,
+      appointment.duration,
+      args.appointmentId // Exclude current appointment from conflict check
+    );
+
+    if (!isAvailable || hasConflict) {
+      throw new Error("New staff member is not available at this time");
+    }
+
+    // Update the appointment
+    await ctx.db.patch(args.appointmentId, {
+      staffProfileId: args.newStaffProfileId,
+      notes: args.reason 
+        ? `${appointment.notes || ""}\nReassigned: ${args.reason}` 
+        : appointment.notes,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/**
  * Create sample available times for all doctors (for development/testing)
  */
 export const createSampleAvailableTimesForAllDoctors = mutation({

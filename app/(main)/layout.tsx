@@ -10,10 +10,11 @@ export default function MainLayout({
 }) {
   return (
     <div className="relative min-h-screen pt-0">
-
       <Navbar />
 
-      <div className="relative z-20">{children}</div>
+      <main className="relative z-20 animate-fade-in">
+        {children}
+      </main>
 
       <Footer />
 

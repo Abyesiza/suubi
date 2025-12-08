@@ -1,286 +1,121 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
-import { Calendar as CalendarIcon, Clock, MapPin, User, Search, Filter, Plus, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
-import Lifeline from '@/components/ui/Lifeline';
+import {
+  Calendar as CalendarIcon,
+  Clock,
+  MapPin,
+  User,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Stethoscope,
+  ChevronRight,
+  ChevronLeft,
+  CalendarCheck,
+  Loader2,
+  Search,
+  Filter,
+  Info,
+  Heart,
+  Building2,
+} from 'lucide-react';
 import Loader from '@/components/ui/Loader';
 import { useQuery, useMutation } from 'convex/react';
-import { useUser } from '@clerk/nextjs';
-import { useSearchParams } from 'next/navigation';
+import { useUser, SignInButton } from '@clerk/nextjs';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
-// Status badge component
-const StatusBadge = ({ status }: { status: string }) => {
-  const getStatusConfig = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return { color: 'bg-yellow-100 text-yellow-800', icon: AlertCircle };
-      case 'approved':
-        return { color: 'bg-blue-100 text-blue-800', icon: CheckCircle };
-      case 'confirmed':
-        return { color: 'bg-green-100 text-green-800', icon: CheckCircle };
-      case 'completed':
-        return { color: 'bg-gray-100 text-gray-800', icon: CheckCircle };
-      case 'cancelled':
-        return { color: 'bg-red-100 text-red-800', icon: XCircle };
-      case 'rescheduled':
-        return { color: 'bg-orange-100 text-orange-800', icon: AlertCircle };
-      case 'no_show':
-        return { color: 'bg-red-100 text-red-800', icon: XCircle };
-      default:
-        return { color: 'bg-gray-100 text-gray-800', icon: AlertCircle };
-    }
-  };
+type BookingStep = 'date' | 'time' | 'details' | 'confirm';
 
-  const config = getStatusConfig(status);
-  const Icon = config.icon;
-
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
-      <Icon className="w-3 h-3" />
-      {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
-    </span>
-  );
+const statusConfig: Record<string, { color: string; icon: typeof CheckCircle2; label: string }> = {
+  pending: { color: 'bg-amber-100 text-amber-700 border-amber-200', icon: Clock, label: 'Pending Approval' },
+  approved: { color: 'bg-blue-100 text-blue-700 border-blue-200', icon: CheckCircle2, label: 'Approved' },
+  confirmed: { color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle2, label: 'Confirmed' },
+  completed: { color: 'bg-gray-100 text-gray-600 border-gray-200', icon: CheckCircle2, label: 'Completed' },
+  cancelled: { color: 'bg-red-100 text-red-600 border-red-200', icon: XCircle, label: 'Cancelled' },
+  rescheduled: { color: 'bg-orange-100 text-orange-700 border-orange-200', icon: CalendarIcon, label: 'Rescheduled' },
+  no_show: { color: 'bg-red-100 text-red-600 border-red-200', icon: XCircle, label: 'No Show' },
 };
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.2,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { x: -20, opacity: 0 },
-  visible: {
-    x: 0,
-    opacity: 1,
-    transition: {
-      type: 'spring',
-      stiffness: 100,
-    },
-  },
-};
+const appointmentTypes = [
+  { value: 'consultation', label: 'General Consultation', icon: Stethoscope, description: 'Meet with a doctor for health concerns' },
+  { value: 'follow_up', label: 'Follow-up Visit', icon: CalendarCheck, description: 'Continue treatment or check progress' },
+  { value: 'routine_checkup', label: 'Routine Checkup', icon: Heart, description: 'Regular health examination' },
+  { value: 'emergency', label: 'Urgent Care', icon: AlertCircle, description: 'For pressing health issues' },
+  { value: 'telemedicine', label: 'Telemedicine', icon: User, description: 'Virtual consultation from home' },
+  { value: 'specialist_referral', label: 'Specialist Referral', icon: Building2, description: 'See a specialized doctor' },
+];
 
 export default function AppointmentsPage() {
-  const { user } = useUser();
-  const searchParams = useSearchParams();
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [isLoading, setIsLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterSpecialty, setFilterSpecialty] = useState('all');
-  const [selectedDoctor, setSelectedDoctor] = useState<string>('');
+  const { user, isSignedIn } = useUser();
+  const [bookingStep, setBookingStep] = useState<BookingStep>('date');
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<{ startTime: string; timestamp: number } | null>(null);
   const [appointmentType, setAppointmentType] = useState<string>('consultation');
   const [reason, setReason] = useState('');
-  const [showBookingForm, setShowBookingForm] = useState(false);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('');
-  const [preferredTime, setPreferredTime] = useState<string>('');
-  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const [isBooking, setIsBooking] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [showBookingPanel, setShowBookingPanel] = useState(false);
 
-  // Get current user from Convex (skip when not authenticated)
+  // Get current user from Convex
   const currentUser = useQuery(
     api.users.getCurrentUser,
     user?.id ? { clerkId: user.id } : "skip"
   );
 
   // Get user's appointments
-  const userAppointments = useQuery(api.appointments.getPatientAppointmentsWithStaff, 
+  const userAppointments = useQuery(
+    api.appointments.getPatientAppointmentsWithStaff,
     currentUser ? { patientId: currentUser._id } : "skip"
   );
 
-  // Get available medical staff (doctors, nurses, allied health)
-  const availableDoctors = useQuery(api.users.getMedicalStaff, {});
-
-  // Get available time slots for selected doctor and date
-  const selectedStaff = availableDoctors?.find(doctor => doctor.staffProfile._id === selectedDoctor);
-  const selectedDoctorUser = selectedStaff?.user;
-  const selectedStaffProfile = selectedStaff?.staffProfile;
-  
-  // Get day of week for filtering recurring slots
-  const dayOfWeek = date ? 
-    ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()] : 
-    null;
-
-  // Get available time slots using new functions from availableTimes.ts
-  const recurringTimeSlots = useQuery(
-    api.availableTimes.getAvailableTimesByDayOfWeek,
-    selectedDoctorUser && dayOfWeek && showBookingForm ? {
-      userId: selectedDoctorUser._id,
-      dayOfWeek: dayOfWeek as any
-    } : "skip"
+  // Get clinic-wide available slots for selected date
+  const availableSlots = useQuery(
+    api.appointments.getClinicAvailableSlots,
+    selectedDate ? { date: selectedDate.getTime(), appointmentDuration: 30 } : "skip"
   );
-
-  const specificDateTimeSlots = useQuery(
-    api.availableTimes.getAvailableTimesByDateFixed,
-    selectedDoctorUser && date && showBookingForm ? {
-      userId: selectedDoctorUser._id,
-      date: date.getTime()
-    } : "skip"
-  );
-
-  // Combine existing appointments to avoid double booking
-  const staffExistingAppointments = useQuery(
-    api.availableTimes.getAvailableTimesByUserId,
-    selectedDoctorUser ? { userId: selectedDoctorUser._id } : "skip"
-  );
-
-  // Combine recurring and specific date slots
-  const availableTimeSlots = showBookingForm && selectedDoctorUser && date ? 
-    [
-      ...(recurringTimeSlots?.filter(slot => slot.isRecurring !== false && slot.isAvailable !== false) || []),
-      ...(specificDateTimeSlots?.filter(slot => slot.date !== undefined && slot.isAvailable !== false) || [])
-    ] : [];
-  // Preselect staff profile from URL and open booking form
-  useEffect(() => {
-    const preselectId = searchParams.get('staffProfileId');
-    if (preselectId) {
-      setSelectedDoctor(preselectId);
-      setShowBookingForm(true);
-    }
-  }, [searchParams]);
-
 
   // Mutations
-  const createAppointment = useMutation(api.appointments.createAppointment);
+  const createAppointmentWithAutoAssign = useMutation(api.appointments.createAppointmentWithAutoAssign);
   const cancelAppointment = useMutation(api.appointments.cancelAppointment);
   const confirmAppointment = useMutation(api.appointments.confirmAppointment);
-  // Removed createSampleAvailableTimes mutation
 
-  // Filter appointments based on search query and specialty filter
-  const filteredAppointments = userAppointments?.filter(appointment => {
-    if (!appointment) return false;
+  // Filter appointments
+  const filteredAppointments = useMemo(() => {
+    if (!userAppointments) return [];
     
-    const doctorName = `${appointment.staffUser?.firstName || ''} ${appointment.staffUser?.lastName || ''}`.toLowerCase();
-    const specialty = appointment.staffProfile?.specialty?.toLowerCase() || '';
-    const location = appointment.location?.toLowerCase() || '';
-    
-    const matchesSearch = doctorName.includes(searchQuery.toLowerCase()) || 
-                          specialty.includes(searchQuery.toLowerCase()) ||
-                          location.includes(searchQuery.toLowerCase());
-    
-    const matchesSpecialty = filterSpecialty === 'all' || specialty === filterSpecialty.toLowerCase();
-    
-    return matchesSearch && matchesSpecialty;
-  }) || [];
-  
-  // Get unique specialties for filter dropdown
-  const specialties = Array.from(new Set(
-    availableDoctors?.map(doctor => doctor.staffProfile.specialty).filter(Boolean) || []
-  ));
+    return userAppointments.filter(apt => {
+      const staffName = `${apt.staffUser?.firstName || ''} ${apt.staffUser?.lastName || ''}`.toLowerCase();
+      const specialty = apt.staffProfile?.specialty?.toLowerCase() || '';
+      const matchesSearch = staffName.includes(searchQuery.toLowerCase()) || 
+                           specialty.includes(searchQuery.toLowerCase());
+      const matchesStatus = filterStatus === 'all' || apt.status === filterStatus;
+      return matchesSearch && matchesStatus;
+    });
+  }, [userAppointments, searchQuery, filterStatus]);
 
-  const isAuthenticated = !!currentUser;
-  const canSubmit = !!(isAuthenticated && selectedDoctor && date && selectedTimeSlot);
-
-  // Handle appointment booking
-  const handleBookAppointment = async () => {
-    setAttemptedSubmit(true);
-    const missing: string[] = [];
-    if (!isAuthenticated) missing.push('Sign in');
-    if (!selectedDoctor) missing.push('Select staff');
-    if (!date) missing.push('Select date');
-    if (!selectedTimeSlot) missing.push('Select time slot');
-    if (missing.length) {
-      toast.error(`Missing: ${missing.join(', ')}`);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const appointmentDate = new Date((date as Date).getTime());
-      const [hours, minutes] = selectedTimeSlot.split(':').map(Number);
-      appointmentDate.setHours(hours, minutes, 0, 0);
-
-      await createAppointment({
-        patientId: currentUser!._id,
-        staffProfileId: selectedDoctor as Id<'staff_profiles'>,
-        appointmentDate: appointmentDate.getTime(),
-        duration: 30,
-        appointmentType: appointmentType as any,
-        reason: reason || undefined,
-        createdById: currentUser!._id,
-      });
-
-      toast.success('Appointment booked successfully!');
-      setShowBookingForm(false);
-      setSelectedDoctor('');
-      setSelectedTimeSlot('');
-      setPreferredTime('');
-      setReason('');
-      setDate(new Date());
-      setAttemptedSubmit(false);
-    } catch (error: any) {
-      console.error('Error booking appointment:', error);
-      const message = typeof error?.message === 'string' ? error.message : 'Failed to book appointment. Please try again.';
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle appointment cancellation
-  const handleCancelAppointment = async (appointmentId: Id<"appointments">) => {
-    if (!currentUser) return;
-
-    try {
-      await cancelAppointment({
-        appointmentId,
-        cancelledBy: currentUser._id,
-        cancellationReason: 'Cancelled by patient',
-      });
-      toast.success('Appointment cancelled successfully');
-    } catch (error) {
-      console.error('Error cancelling appointment:', error);
-      toast.error('Failed to cancel appointment');
-    }
-  };
-
-  // Handle appointment confirmation
-  const handleConfirmAppointment = async (appointmentId: Id<"appointments">) => {
-    if (!currentUser) return;
-
-    try {
-      await confirmAppointment({
-        appointmentId,
-        confirmedBy: currentUser._id,
-      });
-      toast.success('Appointment confirmed successfully');
-    } catch (error) {
-      console.error('Error confirming appointment:', error);
-      toast.error('Failed to confirm appointment');
-    }
-  };
-
-  // Removed handler for creating sample available times
-
-  // Helper function to convert time string to minutes
-  const timeStringToMinutes = (timeString: string): number => {
-    const [hours, minutes] = timeString.split(':').map(Number);
-    return hours * 60 + minutes;
-  };
-
-  // Format date for display
+  // Format helpers
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString('en-US', {
       weekday: 'short',
-      year: 'numeric',
       month: 'short',
       day: 'numeric',
+      year: 'numeric',
     });
   };
 
-  // Format time for display
   const formatTime = (timestamp: number) => {
     return new Date(timestamp).toLocaleTimeString('en-US', {
       hour: 'numeric',
@@ -289,471 +124,712 @@ export default function AppointmentsPage() {
     });
   };
 
+  const formatTimeSlot = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes);
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  };
+
+  // Handle booking
+  const handleBookAppointment = async () => {
+    if (!currentUser || !selectedDate || !selectedTimeSlot) {
+      toast.error('Please complete all required fields');
+      return;
+    }
+
+    setIsBooking(true);
+    try {
+      const result = await createAppointmentWithAutoAssign({
+        patientId: currentUser._id,
+        appointmentDate: selectedTimeSlot.timestamp,
+        duration: 30,
+        appointmentType: appointmentType as any,
+        reason: reason || undefined,
+        createdById: currentUser._id,
+      });
+
+      toast.success('Appointment booked successfully! Waiting for approval.');
+      
+      // Reset form
+      setSelectedDate(undefined);
+      setSelectedTimeSlot(null);
+      setAppointmentType('consultation');
+      setReason('');
+      setBookingStep('date');
+      setShowBookingPanel(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to book appointment');
+    } finally {
+      setIsBooking(false);
+    }
+  };
+
+  const handleCancelAppointment = async (appointmentId: Id<"appointments">) => {
+    if (!currentUser) return;
+    try {
+      await cancelAppointment({
+        appointmentId,
+        cancelledBy: currentUser._id,
+        cancellationReason: 'Cancelled by patient',
+      });
+      toast.success('Appointment cancelled');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to cancel appointment');
+    }
+  };
+
+  const handleConfirmAppointment = async (appointmentId: Id<"appointments">) => {
+    if (!currentUser) return;
+    try {
+      await confirmAppointment({
+        appointmentId,
+        confirmedBy: currentUser._id,
+      });
+      toast.success('Appointment confirmed');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to confirm appointment');
+    }
+  };
+
+  const goToStep = (step: BookingStep) => {
+    setBookingStep(step);
+  };
+
+  const canProceedFromDate = !!selectedDate;
+  const canProceedFromTime = !!selectedTimeSlot;
+  const canProceedFromDetails = !!appointmentType;
+
+  // Categorize time slots
+  const categorizedSlots = useMemo(() => {
+    if (!availableSlots) return { morning: [], afternoon: [], evening: [] };
+    
+    return availableSlots.reduce((acc, slot) => {
+      if (!slot.isAvailable) return acc;
+      
+      const hour = parseInt(slot.startTime.split(':')[0]);
+      if (hour < 12) {
+        acc.morning.push(slot);
+      } else if (hour < 17) {
+        acc.afternoon.push(slot);
+      } else {
+        acc.evening.push(slot);
+      }
+      return acc;
+    }, { morning: [] as typeof availableSlots, afternoon: [] as typeof availableSlots, evening: [] as typeof availableSlots });
+  }, [availableSlots]);
+
   return (
-    <div className="min-h-screen py-16 md:py-20 lg:py-24 bg-gradient-to-b from-brand-sky/10 to-background">
+    <div className="min-h-screen py-20 lg:py-24 bg-gradient-to-br from-brand-sky/5 via-white to-brand-teal/5">
       <div className="container-custom">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-12 md:mb-16"
+          className="text-center mb-10"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-sm font-medium text-brand-navy mb-6">
-            <span className="inline-flex h-2 w-2 rounded-full bg-accent" />
-            Your Healthcare Journey
-          </div>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 text-brand-navy">Manage Your Appointments</h1>
-          <p className="text-brand-navy/70 max-w-2xl mx-auto text-base md:text-lg lg:text-xl leading-relaxed">
-            Schedule and track your medical appointments with our healthcare professionals.
+          <Badge variant="secondary" className="mb-4 bg-brand-teal/10 text-brand-teal border-brand-teal/20">
+            <CalendarCheck className="w-3 h-3 mr-1" />
+            Healthcare Made Simple
+          </Badge>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-brand-navy mb-4">
+            Manage Your Appointments
+          </h1>
+          <p className="text-brand-navy/60 max-w-2xl mx-auto text-lg">
+            Book appointments with our healthcare professionals. Select a time that works for you, 
+            and we'll match you with an available medical specialist.
           </p>
         </motion.div>
 
-        {/* Removed sample data button */}
-
         <div className="grid lg:grid-cols-3 gap-8">
+          {/* Appointments List */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ delay: 0.1 }}
             className="lg:col-span-2"
           >
-            <Card className="p-6 border-green-light">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h2 className="text-2xl font-semibold text-foreground">Upcoming Appointments</h2>
-                
-                {/* Search and Filter - NEW */}
-                <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-                  <div className="relative">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      placeholder="Search appointments..."
-                      className="pl-8 w-full md:w-[200px]"
+            <Card className="border-gray-100 shadow-sm">
+              <CardHeader className="pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="text-xl text-brand-navy">Your Appointments</CardTitle>
+                    <CardDescription>View and manage your upcoming visits</CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => setShowBookingPanel(!showBookingPanel)}
+                    className="lg:hidden bg-brand-orange hover:bg-brand-orange/90"
+                  >
+                    <CalendarIcon className="w-4 h-4 mr-2" />
+                    Book New
+                  </Button>
+                </div>
+
+                {/* Search & Filter */}
+                <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      placeholder="Search by doctor or specialty..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9"
                     />
                   </div>
-                  
-                  <div className="relative">
-                    <select
-                      className="w-full md:w-[150px] h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
-                      value={filterSpecialty}
-                      onChange={(e) => setFilterSpecialty(e.target.value)}
-                    >
-                      <option value="all">All Specialties</option>
-                      {specialties.map(specialty => (
-                        <option key={specialty} value={specialty}>{specialty}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-              
-              {!userAppointments ? (
-                <div className="py-8 text-center">
-                  <Loader size="md" text="Loading appointments..." />
-                </div>
-              ) : filteredAppointments.length === 0 ? (
-                <div className="py-8 text-center">
-                  <p className="text-muted-foreground">
-                    {userAppointments.length === 0 
-                      ? "You don't have any appointments yet." 
-                      : "No appointments found matching your search criteria."
-                    }
-                  </p>
-                  {userAppointments.length > 0 && (
-                  <Button
-                    variant="link"
-                    className="mt-2 text-primary"
-                    onClick={() => {
-                      setSearchQuery('');
-                      setFilterSpecialty('all');
-                    }}
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="h-10 rounded-md border border-input bg-background px-3 text-sm min-w-[150px]"
                   >
-                    Clear filters
-                  </Button>
-                  )}
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
                 </div>
-              ) : (
-                <motion.div
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                  className="space-y-4"
-                >
-                  {filteredAppointments.map((appointment) => (
-                    <motion.div
-                      key={appointment._id}
-                      variants={itemVariants}
-                      className="border border-green-light rounded-lg p-4 hover:shadow-md transition-shadow bg-card relative overflow-hidden"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold text-lg text-foreground">
-                              Dr. {appointment.staffUser?.firstName} {appointment.staffUser?.lastName}
-                            </h3>
-                            <StatusBadge status={appointment.status} />
-                          </div>
-                          <p className="text-primary mb-2">{appointment.staffProfile?.specialty || 'General Practice'}</p>
-                          <div className="mt-2 space-y-1 text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <CalendarIcon className="w-4 h-4 text-primary" />
-                              <span>{formatDate(appointment.appointmentDate)}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4 text-primary" />
-                              <span>{formatTime(appointment.appointmentDate)}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-4 h-4 text-primary" />
-                              <span>{appointment.location || 'Main Clinic'}</span>
-                            </div>
-                            {appointment.reason && (
-                              <div className="mt-2">
-                                <p className="text-sm text-muted-foreground">
-                                  <strong>Reason:</strong> {appointment.reason}
-                                </p>
+              </CardHeader>
+
+              <CardContent>
+                {!isSignedIn ? (
+                  <div className="text-center py-12">
+                    <User className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+                    <p className="text-gray-500 mb-4">Sign in to view your appointments</p>
+                    <SignInButton mode="modal">
+                      <Button variant="outline">Sign In</Button>
+                    </SignInButton>
+                  </div>
+                ) : !userAppointments ? (
+                  <div className="py-12 flex justify-center">
+                    <Loader size="md" text="Loading appointments..." />
+                  </div>
+                ) : filteredAppointments.length === 0 ? (
+                  <div className="text-center py-12">
+                    <CalendarIcon className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+                    <p className="text-gray-500 mb-2">
+                      {userAppointments.length === 0
+                        ? "You don't have any appointments yet"
+                        : 'No appointments match your filters'}
+                    </p>
+                    {userAppointments.length === 0 && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowBookingPanel(true)}
+                        className="mt-2"
+                      >
+                        Book Your First Appointment
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <AnimatePresence>
+                      {filteredAppointments.map((apt, index) => {
+                        const status = statusConfig[apt.status] || statusConfig.pending;
+                        const StatusIcon = status.icon;
+                        
+                        return (
+                          <motion.div
+                            key={apt._id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ delay: index * 0.05 }}
+                            className="group relative p-4 rounded-xl border border-gray-100 hover:border-brand-teal/30 hover:shadow-md transition-all bg-white"
+                          >
+                            <div className="flex items-start gap-4">
+                              {/* Date Badge */}
+                              <div className="hidden sm:flex flex-col items-center justify-center min-w-[60px] h-[60px] rounded-lg bg-brand-navy/5 text-brand-navy">
+                                <span className="text-xs uppercase font-medium">
+                                  {new Date(apt.appointmentDate).toLocaleDateString('en-US', { month: 'short' })}
+                                </span>
+                                <span className="text-xl font-bold">
+                                  {new Date(apt.appointmentDate).getDate()}
+                                </span>
                               </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2 ml-4">
-                          {appointment.status === 'approved' && (
-                            <Button 
-                              variant="outline" 
-                              className="border-green-500 text-green-600 hover:bg-green-50"
-                              onClick={() => handleConfirmAppointment(appointment._id)}
-                            >
-                              Confirm
-                            </Button>
-                          )}
-                          {appointment.status === 'pending' && (
-                            <Button variant="outline" className="border-yellow-500 text-yellow-600 hover:bg-yellow-50">
-                              Pending Approval
-                            </Button>
-                          )}
-                          {appointment.status === 'confirmed' && (
-                            <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
-                              Confirmed
-                            </Button>
-                          )}
-                          {appointment.status === 'completed' && (
-                            <Button variant="outline" className="border-gray-500 text-gray-600 hover:bg-gray-50">
-                              Completed
-                            </Button>
-                          )}
-                          {['pending', 'approved', 'confirmed'].includes(appointment.status) && (
-                            <Button 
-                              variant="outline" 
-                              className="border-red-500 text-red-600 hover:bg-red-50"
-                              onClick={() => handleCancelAppointment(appointment._id)}
-                            >
-                              Cancel
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                      {/* Small lifeline at the bottom of each appointment card */}
-                      <div className="absolute bottom-0 left-0 right-0 h-4">
-                        <Lifeline 
-                          color="#FF9933" 
-                          height="8px" 
-                          variant="minimal" 
-                          className="opacity-30"
-                        />
-                      </div>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              )}
+
+                              {/* Details */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                  <div>
+                                    <h3 className="font-semibold text-brand-navy">
+                                      {apt.staffProfile?.role === 'doctor' ? 'Dr. ' : ''}
+                                      {apt.staffUser?.firstName} {apt.staffUser?.lastName}
+                                    </h3>
+                                    <p className="text-sm text-brand-teal">
+                                      {apt.staffProfile?.specialty || 'General Practice'}
+                                    </p>
+                                  </div>
+                                  <Badge variant="outline" className={cn("text-xs", status.color)}>
+                                    <StatusIcon className="w-3 h-3 mr-1" />
+                                    {status.label}
+                                  </Badge>
+                                </div>
+
+                                <div className="flex flex-wrap gap-3 text-sm text-gray-500">
+                                  <span className="flex items-center gap-1">
+                                    <CalendarIcon className="w-3.5 h-3.5" />
+                                    {formatDate(apt.appointmentDate)}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3.5 h-3.5" />
+                                    {formatTime(apt.appointmentDate)}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <MapPin className="w-3.5 h-3.5" />
+                                    {apt.location || 'Main Clinic'}
+                                  </span>
+                                </div>
+
+                                {apt.reason && (
+                                  <p className="mt-2 text-sm text-gray-600 line-clamp-1">
+                                    <span className="font-medium">Reason:</span> {apt.reason}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100">
+                              {apt.status === 'approved' && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleConfirmAppointment(apt._id)}
+                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                  <CheckCircle2 className="w-4 h-4 mr-1" />
+                                  Confirm
+                                </Button>
+                              )}
+                              {['pending', 'approved', 'confirmed'].includes(apt.status) && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleCancelAppointment(apt._id)}
+                                  className="text-red-600 border-red-200 hover:bg-red-50"
+                                >
+                                  <XCircle className="w-4 h-4 mr-1" />
+                                  Cancel
+                                </Button>
+                              )}
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </div>
+                )}
+              </CardContent>
             </Card>
           </motion.div>
 
+          {/* Booking Panel */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ delay: 0.2 }}
+            className={cn(
+              "lg:block",
+              showBookingPanel ? "block" : "hidden"
+            )}
           >
-            <Card className="p-6 border-green-light">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-foreground">Book New Appointment</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowBookingForm(!showBookingForm)}
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  {showBookingForm ? 'Cancel' : 'New Booking'}
-                </Button>
-              </div>
+            <Card className="border-gray-100 shadow-sm sticky top-24">
+              <CardHeader className="pb-4 border-b">
+                <CardTitle className="text-xl text-brand-navy flex items-center gap-2">
+                  <CalendarCheck className="w-5 h-5 text-brand-teal" />
+                  Book Appointment
+                </CardTitle>
+                <CardDescription>
+                  Select a date and time that works for you
+                </CardDescription>
+              </CardHeader>
 
-              
-
-              {/* Booking Form - Only visible when showBookingForm is true */}
-              {showBookingForm ? (
-              <div className="space-y-4">
-
-                  {/* Staff Selection - inside booking form */}
-                  <div className="grid gap-2">
-                    <Label htmlFor="doctor-select">Select Staff</Label>
-                    <select
-                      id="doctor-select"
-                      className={`w-full h-10 rounded-md border bg-background px-3 py-2 text-sm text-foreground ${attemptedSubmit && !selectedDoctor ? 'border-red-500' : 'border-input'}`}
-                      value={selectedDoctor}
-                      onChange={(e) => {
-                        setSelectedDoctor(e.target.value);
-                        setSelectedTimeSlot(''); // Reset time slot when doctor changes
-                        setPreferredTime(''); // Reset preferred time when doctor changes
-                      }}
-                    >
-                      <option value="">Select staff</option>
-                      {availableDoctors?.map(doctor => (
-                        <option key={doctor.staffProfile._id} value={doctor.staffProfile._id}>
-                          {doctor.staffProfile.role === 'doctor' ? 'Dr. ' : ''}{doctor.user.firstName} {doctor.user.lastName} - {doctor.staffProfile.specialty || doctor.staffProfile.subRole || 'General Practice'}
-                        </option>
-                      ))}
-                    </select>
-                    {attemptedSubmit && !selectedDoctor && (
-                      <span className="text-xs text-red-600">Please select a staff member.</span>
-                    )}
-                    {selectedDoctorUser && (
-                      <div className="mt-2 flex items-center gap-2">
-                        <img
-                          src={selectedStaffProfile?.profileImage || selectedDoctorUser.imageUrl || '/logo.png'}
-                          alt={`${selectedDoctorUser.firstName ?? ''} ${selectedDoctorUser.lastName ?? ''}`.trim() || 'Staff'}
-                          className="w-6 h-6 rounded-full object-cover"
-                        />
-                        <div className="text-sm text-foreground">
-                          <span className="font-medium">
-                            {selectedStaffProfile?.role === 'doctor' ? 'Dr. ' : ''}{selectedDoctorUser.firstName} {selectedDoctorUser.lastName}
-                          </span>
-                          {selectedStaffProfile?.specialty && (
-                            <span className="ml-2 text-muted-foreground">{selectedStaffProfile.specialty}</span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Time Slot Selection - inside booking form */}
-                  {selectedDoctor && date && (
-                    <div className="grid gap-2">
-                      <Label>Select Time Slot</Label>
-                      {!recurringTimeSlots && !specificDateTimeSlots ? (
-                        <div className="flex justify-center py-4">
-                          <Loader size="sm" text="Loading available times..." />
-                        </div>
-                      ) : availableTimeSlots.length === 0 ? (
-                        <div className="text-center py-4 text-muted-foreground">
-                          <p>No available time slots for this doctor on the selected date.</p>
-                          <p className="text-sm mt-1">This doctor may not have set up their availability schedule yet.</p>
-                          <p className="text-sm">Please try a different date or doctor.</p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                          {(() => {
-                            // Generate 30-minute slots from available time ranges
-                            const generatedSlots: Array<{startTime: string, endTime: string, isPreferred: boolean}> = [];
-                            
-                            availableTimeSlots
-                              .forEach(slot => {
-                                const slotStartTime = timeStringToMinutes(slot.startTime);
-                                const slotEndTime = timeStringToMinutes(slot.endTime);
-                                
-                                // Generate 30-minute slots within this time range
-                                for (let time = slotStartTime; time + 30 <= slotEndTime; time += 30) {
-                                  const startTimeStr = `${Math.floor(time / 60).toString().padStart(2, '0')}:${(time % 60).toString().padStart(2, '0')}`;
-                                  const endTimeStr = `${Math.floor((time + 30) / 60).toString().padStart(2, '0')}:${((time + 30) % 60).toString().padStart(2, '0')}`;
-                                  
-                                  const isPreferred = !!(preferredTime && 
-                                    Math.abs(time - timeStringToMinutes(preferredTime)) <= 30);
-                                  
-                                  generatedSlots.push({
-                                    startTime: startTimeStr,
-                                    endTime: endTimeStr,
-                                    isPreferred
-                                  });
-                                }
-                              });
-
-                            // Dedupe overlapping ranges that produce the same 30-min slot
-                            const seenKeys = new Set<string>();
-                            const uniqueSlots = generatedSlots.filter((slot) => {
-                              const key = `${slot.startTime}-${slot.endTime}`;
-                              if (seenKeys.has(key)) return false;
-                              seenKeys.add(key);
-                              return true;
-                            });
-                            
-                            // Sort by preferred time if set, otherwise by time
-                            uniqueSlots.sort((a, b) => {
-                              if (preferredTime) {
-                                const preferredMinutes = timeStringToMinutes(preferredTime);
-                                const aMinutes = timeStringToMinutes(a.startTime);
-                                const bMinutes = timeStringToMinutes(b.startTime);
-                                const aDiff = Math.abs(aMinutes - preferredMinutes);
-                                const bDiff = Math.abs(bMinutes - preferredMinutes);
-                                return aDiff - bDiff;
-                              }
-                              return a.startTime.localeCompare(b.startTime);
-                            });
-                            
-                            return uniqueSlots.map((slot) => (
-                              <button
-                                key={`${slot.startTime}-${slot.endTime}`}
-                                type="button"
-                                className={`p-3 rounded-md border text-sm transition-colors relative ${
-                                  selectedTimeSlot === slot.startTime
-                                    ? 'border-primary bg-primary text-white'
-                                    : slot.isPreferred
-                                    ? 'border-green-500 bg-green-50 hover:border-green-600'
-                                    : 'border-gray-200 hover:border-primary hover:bg-primary/5'
-                                }`}
-                                onClick={() => setSelectedTimeSlot(slot.startTime)}
-                              >
-                                <div className="font-medium">{slot.startTime}</div>
-                                <div className="text-xs opacity-75">{slot.endTime}</div>
-                                {slot.isPreferred && (
-                                  <div className="absolute top-1 right-1 text-xs text-green-600 font-bold">
-                                    ★
-                                  </div>
-                                )}
-                              </button>
-                            ));
-                          })()}
-                        </div>
-                      )}
-                      {attemptedSubmit && !selectedTimeSlot && (
-                        <span className="text-xs text-red-600">Please select a time slot.</span>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="grid gap-2">
-                    <Label htmlFor="appointment-type">Appointment Type</Label>
-                    <select
-                      id="appointment-type"
-                      className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
-                      value={appointmentType}
-                      onChange={(e) => setAppointmentType(e.target.value)}
-                    >
-                      <option value="consultation">Consultation</option>
-                      <option value="follow_up">Follow-up</option>
-                      <option value="routine_checkup">Routine Checkup</option>
-                      <option value="emergency">Emergency</option>
-                      <option value="specialist_referral">Specialist Referral</option>
-                      <option value="telemedicine">Telemedicine</option>
-                      <option value="in_person">In-Person</option>
-                  </select>
-                </div>
-                  
-                  <div className="grid gap-2">
-                    <Label htmlFor="reason">Reason for Visit (Optional)</Label>
-                    <Input
-                      id="reason"
-                      placeholder="Brief description of your symptoms or concerns"
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                    />
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label>Select Date</Label>
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                      onSelect={(newDate) => {
-                        setDate(newDate);
-                        setSelectedTimeSlot(''); // Reset time slot when date changes
-                        setPreferredTime(''); // Reset preferred time when date changes
-                      }}
-                    className="rounded-md border border-green-light"
-                    disabled={(date) => {
-                        // Only disable past dates - hospitals work 24/7
-                      const now = new Date();
-                      now.setHours(0, 0, 0, 0);
-                        return date < now;
-                    }}
-                  />
-                </div>
-
-                  {/* Preferred Time Input */}
-                  {selectedDoctor && date && (
-                    <div className="grid gap-2">
-                      <Label htmlFor="preferred-time">Preferred Time (Optional)</Label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          id="preferred-time"
-                          type="time"
-                          className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
-                          value={preferredTime}
-                          onChange={(e) => setPreferredTime(e.target.value)}
-                          placeholder="Select your preferred time"
-                        />
-                        <span className="text-sm text-muted-foreground">
-                          We'll try to match this time
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                
-                {!isAuthenticated && (
-                  <div className="text-sm text-red-600 mb-2">Please sign in to book an appointment.</div>
-                )}
-                {isLoading ? (
-                  <div className="flex justify-center py-2">
-                      <Loader size="sm" text="Booking appointment..." />
+              <CardContent className="pt-6">
+                {!isSignedIn ? (
+                  <div className="text-center py-8">
+                    <User className="w-10 h-10 mx-auto text-gray-300 mb-3" />
+                    <p className="text-gray-500 text-sm mb-4">Please sign in to book an appointment</p>
+                    <SignInButton mode="modal">
+                      <Button className="bg-brand-orange hover:bg-brand-orange/90">
+                        Sign In to Book
+                      </Button>
+                    </SignInButton>
                   </div>
                 ) : (
-                  <Button 
-                    className="w-full btn-primary"
-                      onClick={handleBookAppointment}
-                      disabled={!canSubmit}
-                    >
-                      <User className="w-4 h-4 mr-2" />
-                      {isAuthenticated ? 'Book Appointment' : 'Sign in to Book'}
-                    </Button>
+                  <div className="space-y-6">
+                    {/* Step Indicator */}
+                    <div className="flex items-center justify-between text-xs font-medium">
+                      {['date', 'time', 'details', 'confirm'].map((step, idx) => (
+                        <div
+                          key={step}
+                          className={cn(
+                            "flex items-center gap-1.5",
+                            bookingStep === step ? "text-brand-teal" : 
+                            ['date', 'time', 'details', 'confirm'].indexOf(bookingStep) > idx ? "text-green-600" : "text-gray-400"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px]",
+                            bookingStep === step ? "bg-brand-teal" :
+                            ['date', 'time', 'details', 'confirm'].indexOf(bookingStep) > idx ? "bg-green-500" : "bg-gray-300"
+                          )}>
+                            {['date', 'time', 'details', 'confirm'].indexOf(bookingStep) > idx ? '✓' : idx + 1}
+                          </div>
+                          <span className="hidden sm:inline capitalize">{step}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <AnimatePresence mode="wait">
+                      {/* Step 1: Date Selection */}
+                      {bookingStep === 'date' && (
+                        <motion.div
+                          key="date"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          className="space-y-4"
+                        >
+                          <Label className="text-sm font-medium">Select Date</Label>
+                          <Calendar
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={(date) => {
+                              setSelectedDate(date);
+                              setSelectedTimeSlot(null);
+                            }}
+                            disabled={(date) => {
+                              const today = new Date();
+                              today.setHours(0, 0, 0, 0);
+                              return date < today;
+                            }}
+                            className="rounded-lg border"
+                          />
+                          <Button
+                            onClick={() => goToStep('time')}
+                            disabled={!canProceedFromDate}
+                            className="w-full bg-brand-teal hover:bg-brand-teal/90"
+                          >
+                            Continue
+                            <ChevronRight className="w-4 h-4 ml-1" />
+                          </Button>
+                        </motion.div>
+                      )}
+
+                      {/* Step 2: Time Selection */}
+                      {bookingStep === 'time' && (
+                        <motion.div
+                          key="time"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          className="space-y-4"
+                        >
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-medium">
+                              Available Times for {selectedDate?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </Label>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => goToStep('date')}
+                            >
+                              <ChevronLeft className="w-4 h-4 mr-1" />
+                              Back
+                            </Button>
+                          </div>
+
+                          {!availableSlots ? (
+                            <div className="py-8 flex justify-center">
+                              <Loader size="sm" text="Loading available times..." />
+                            </div>
+                          ) : availableSlots.filter(s => s.isAvailable).length === 0 ? (
+                            <div className="py-8 text-center">
+                              <Clock className="w-10 h-10 mx-auto text-gray-300 mb-3" />
+                              <p className="text-gray-500 text-sm">No available slots for this date</p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="mt-3"
+                                onClick={() => goToStep('date')}
+                              >
+                                Choose Another Date
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                              {categorizedSlots.morning.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-gray-500 mb-2">Morning</p>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    {categorizedSlots.morning.map((slot) => (
+                                      <button
+                                        key={slot.startTime}
+                                        onClick={() => setSelectedTimeSlot({ startTime: slot.startTime, timestamp: slot.timestamp })}
+                                        className={cn(
+                                          "p-2 text-xs rounded-lg border transition-all",
+                                          selectedTimeSlot?.startTime === slot.startTime
+                                            ? "border-brand-teal bg-brand-teal text-white"
+                                            : "border-gray-200 hover:border-brand-teal/50 hover:bg-brand-teal/5"
+                                        )}
+                                      >
+                                        {formatTimeSlot(slot.startTime)}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {categorizedSlots.afternoon.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-gray-500 mb-2">Afternoon</p>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    {categorizedSlots.afternoon.map((slot) => (
+                                      <button
+                                        key={slot.startTime}
+                                        onClick={() => setSelectedTimeSlot({ startTime: slot.startTime, timestamp: slot.timestamp })}
+                                        className={cn(
+                                          "p-2 text-xs rounded-lg border transition-all",
+                                          selectedTimeSlot?.startTime === slot.startTime
+                                            ? "border-brand-teal bg-brand-teal text-white"
+                                            : "border-gray-200 hover:border-brand-teal/50 hover:bg-brand-teal/5"
+                                        )}
+                                      >
+                                        {formatTimeSlot(slot.startTime)}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {categorizedSlots.evening.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-gray-500 mb-2">Evening</p>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    {categorizedSlots.evening.map((slot) => (
+                                      <button
+                                        key={slot.startTime}
+                                        onClick={() => setSelectedTimeSlot({ startTime: slot.startTime, timestamp: slot.timestamp })}
+                                        className={cn(
+                                          "p-2 text-xs rounded-lg border transition-all",
+                                          selectedTimeSlot?.startTime === slot.startTime
+                                            ? "border-brand-teal bg-brand-teal text-white"
+                                            : "border-gray-200 hover:border-brand-teal/50 hover:bg-brand-teal/5"
+                                        )}
+                                      >
+                                        {formatTimeSlot(slot.startTime)}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          <Button
+                            onClick={() => goToStep('details')}
+                            disabled={!canProceedFromTime}
+                            className="w-full bg-brand-teal hover:bg-brand-teal/90"
+                          >
+                            Continue
+                            <ChevronRight className="w-4 h-4 ml-1" />
+                          </Button>
+                        </motion.div>
+                      )}
+
+                      {/* Step 3: Details */}
+                      {bookingStep === 'details' && (
+                        <motion.div
+                          key="details"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          className="space-y-4"
+                        >
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-medium">Appointment Details</Label>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => goToStep('time')}
+                            >
+                              <ChevronLeft className="w-4 h-4 mr-1" />
+                              Back
+                            </Button>
+                          </div>
+
+                          <div className="space-y-3">
+                            <Label className="text-xs text-gray-500">Type of Visit</Label>
+                            <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto">
+                              {appointmentTypes.map((type) => {
+                                const Icon = type.icon;
+                                return (
+                                  <button
+                                    key={type.value}
+                                    onClick={() => setAppointmentType(type.value)}
+                                    className={cn(
+                                      "flex items-start gap-3 p-3 rounded-lg border text-left transition-all",
+                                      appointmentType === type.value
+                                        ? "border-brand-teal bg-brand-teal/5"
+                                        : "border-gray-200 hover:border-gray-300"
+                                    )}
+                                  >
+                                    <Icon className={cn(
+                                      "w-5 h-5 mt-0.5",
+                                      appointmentType === type.value ? "text-brand-teal" : "text-gray-400"
+                                    )} />
+                                    <div>
+                                      <p className={cn(
+                                        "text-sm font-medium",
+                                        appointmentType === type.value ? "text-brand-teal" : "text-gray-700"
+                                      )}>
+                                        {type.label}
+                                      </p>
+                                      <p className="text-xs text-gray-500">{type.description}</p>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-xs text-gray-500">Reason for Visit (Optional)</Label>
+                            <Textarea
+                              placeholder="Briefly describe your symptoms or concerns..."
+                              value={reason}
+                              onChange={(e) => setReason(e.target.value)}
+                              rows={3}
+                              className="resize-none"
+                            />
+                          </div>
+
+                          <Button
+                            onClick={() => goToStep('confirm')}
+                            disabled={!canProceedFromDetails}
+                            className="w-full bg-brand-teal hover:bg-brand-teal/90"
+                          >
+                            Review Booking
+                            <ChevronRight className="w-4 h-4 ml-1" />
+                          </Button>
+                        </motion.div>
+                      )}
+
+                      {/* Step 4: Confirmation */}
+                      {bookingStep === 'confirm' && (
+                        <motion.div
+                          key="confirm"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          className="space-y-4"
+                        >
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-medium">Confirm Booking</Label>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => goToStep('details')}
+                            >
+                              <ChevronLeft className="w-4 h-4 mr-1" />
+                              Back
+                            </Button>
+                          </div>
+
+                          <div className="p-4 rounded-lg bg-gray-50 space-y-3">
+                            <div className="flex items-center gap-2 text-sm">
+                              <CalendarIcon className="w-4 h-4 text-brand-teal" />
+                              <span className="font-medium">
+                                {selectedDate?.toLocaleDateString('en-US', { 
+                                  weekday: 'long', 
+                                  month: 'long', 
+                                  day: 'numeric',
+                                  year: 'numeric'
+                                })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Clock className="w-4 h-4 text-brand-teal" />
+                              <span className="font-medium">
+                                {selectedTimeSlot && formatTimeSlot(selectedTimeSlot.startTime)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Stethoscope className="w-4 h-4 text-brand-teal" />
+                              <span className="font-medium">
+                                {appointmentTypes.find(t => t.value === appointmentType)?.label}
+                              </span>
+                            </div>
+                            {reason && (
+                              <div className="pt-2 border-t text-sm">
+                                <p className="text-gray-500 text-xs mb-1">Reason:</p>
+                                <p className="text-gray-700">{reason}</p>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
+                            <div className="flex gap-2">
+                              <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                              <p className="text-xs text-blue-700">
+                                Your appointment will be assigned to an available medical professional. 
+                                You'll receive confirmation once approved.
+                              </p>
+                            </div>
+                          </div>
+
+                          <Button
+                            onClick={handleBookAppointment}
+                            disabled={isBooking}
+                            className="w-full bg-brand-orange hover:bg-brand-orange/90"
+                          >
+                            {isBooking ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Booking...
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="w-4 h-4 mr-2" />
+                                Confirm Booking
+                              </>
+                            )}
+                          </Button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 )}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground mb-4">
-                    Ready to book your next appointment?
-                  </p>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowBookingForm(true)}
-                    className="flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Start Booking
-                  </Button>
-                </div>
-                )}
+              </CardContent>
             </Card>
-            
-            {/* Health Tips Card - NEW */}
-            <Card className="mt-6 p-6 border-green-light bg-[hsl(var(--suubi-green-50))] bg-opacity-30">
-              <h3 className="text-lg font-semibold mb-3 text-foreground">Appointment Tips</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="bg-primary rounded-full w-5 h-5 flex items-center justify-center text-white text-xs mt-0.5">1</span>
-                  <span>Arrive 15 minutes before your scheduled appointment</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="bg-primary rounded-full w-5 h-5 flex items-center justify-center text-white text-xs mt-0.5">2</span>
-                  <span>Bring your insurance card and ID</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="bg-primary rounded-full w-5 h-5 flex items-center justify-center text-white text-xs mt-0.5">3</span>
-                  <span>List any medications you're currently taking</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="bg-primary rounded-full w-5 h-5 flex items-center justify-center text-white text-xs mt-0.5">4</span>
-                  <span>Write down any questions you have for the doctor</span>
-                </li>
-              </ul>
+
+            {/* Tips Card */}
+            <Card className="mt-6 border-brand-teal/20 bg-brand-teal/5">
+              <CardContent className="pt-6">
+                <h3 className="font-semibold text-brand-navy mb-3 flex items-center gap-2">
+                  <Info className="w-4 h-4 text-brand-teal" />
+                  Appointment Tips
+                </h3>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-brand-teal text-white flex items-center justify-center text-xs flex-shrink-0">1</span>
+                    Arrive 15 minutes before your appointment
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-brand-teal text-white flex items-center justify-center text-xs flex-shrink-0">2</span>
+                    Bring your ID and insurance card
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-brand-teal text-white flex items-center justify-center text-xs flex-shrink-0">3</span>
+                    List your current medications
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-brand-teal text-white flex items-center justify-center text-xs flex-shrink-0">4</span>
+                    Prepare questions for your doctor
+                  </li>
+                </ul>
+              </CardContent>
             </Card>
           </motion.div>
         </div>
