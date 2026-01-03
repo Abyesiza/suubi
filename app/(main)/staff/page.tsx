@@ -149,8 +149,15 @@ export default function StaffPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
       {/* Hero Section */}
-      <section className="relative py-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-teal/5 via-transparent to-brand-eucalyptus/5" />
+      {/* Hero Section */}
+      <section className="relative py-24 md:py-32 overflow-hidden bg-brand-navy">
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-brand-teal/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-brand-orange/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
+        <div className="absolute right-10 bottom-10 opacity-5 pointer-events-none animate-pulse-slow">
+          <Stethoscope className="w-64 h-64 text-white" />
+        </div>
+
         <div className="container-custom relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -158,31 +165,32 @@ export default function StaffPage() {
             transition={{ duration: 0.6 }}
             className="text-center max-w-3xl mx-auto"
           >
-            <Badge className="mb-4 bg-brand-teal/10 text-brand-teal hover:bg-brand-teal/20">
-              <Stethoscope className="w-3 h-3 mr-1" />
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-sm font-medium text-white mb-6 backdrop-blur-sm">
+              <Stethoscope className="w-3.5 h-3.5 text-brand-teal" />
               Expert Healthcare Team
-            </Badge>
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-brand-navy to-brand-teal bg-clip-text text-transparent">
+            </div>
+
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-white font-heading leading-tight">
               Meet Our Medical Professionals
             </h1>
-            <p className="text-lg text-muted-foreground mb-8">
-              Our team of experienced healthcare professionals is dedicated to providing you with the highest quality care. 
+            <p className="text-lg md:text-xl text-white/80 mb-10 max-w-2xl mx-auto leading-relaxed">
+              Our team of experienced healthcare professionals is dedicated to providing you with the highest quality care.
               Book an appointment or start a conversation today.
             </p>
 
             {/* Search & Filter */}
-            <div className="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto">
+            <div className="flex flex-col sm:flex-row gap-4 max-w-3xl mx-auto bg-white/5 p-2 rounded-2xl backdrop-blur-sm border border-white/10">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <Input
                   placeholder="Search by name, specialty..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-12 bg-white border-0 text-gray-900 placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-brand-teal"
                 />
               </div>
               <Select value={selectedRole} onValueChange={setSelectedRole}>
-                <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectTrigger className="w-full sm:w-[200px] h-12 bg-white border-0 text-gray-900 focus:ring-2 focus:ring-brand-teal">
                   <SelectValue placeholder="Filter by role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -253,8 +261,8 @@ export default function StaffPage() {
                       <div className="absolute top-3 right-3">
                         <Badge
                           variant={member.isAvailable ? "default" : "secondary"}
-                          className={member.isAvailable 
-                            ? "bg-green-500 text-white" 
+                          className={member.isAvailable
+                            ? "bg-green-500 text-white"
                             : "bg-gray-500 text-white"
                           }
                         >
@@ -336,7 +344,7 @@ export default function StaffPage() {
                       {/* Action Buttons */}
                       <div className="flex gap-2 mt-auto pt-4 border-t">
                         <Button asChild className="flex-1 bg-brand-teal hover:bg-brand-teal/90">
-                          <Link href={`/appointments?staffProfileId=${member.id}`}>
+                          <Link href={`/booking?staffProfileId=${member.id}`}>
                             <Calendar className="h-4 w-4 mr-2" />
                             Book
                           </Link>
@@ -439,7 +447,7 @@ export default function StaffPage() {
                 </p>
               </div>
               <Button asChild size="lg" className="bg-white text-brand-navy hover:bg-white/90 shrink-0">
-                <Link href="/appointments">
+                <Link href="/booking">
                   <Calendar className="mr-2 h-5 w-5" />
                   Book Now
                 </Link>

@@ -6,6 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import Link from 'next/link';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,9 +16,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
-import Lifeline from '@/components/ui/Lifeline';
-import { Heart, User, Phone, Mail, FileText, ChevronRight, CheckCircle } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { Heart, User, Phone, Mail, FileText, ChevronRight, CheckCircle, Users, HeartHandshake } from 'lucide-react';
+import { toast } from 'sonner';
 
 // Animation variants
 const fadeIn = {
@@ -78,6 +79,9 @@ export default function RegisterPatientPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  // Convex mutation
+  const createRegistration = useMutation(api.patientRegistrations.createRegistration);
+
   // Create form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -98,61 +102,75 @@ export default function RegisterPatientPage() {
   });
 
   // Handle form submission
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Patient registration data:', values);
-      setIsSubmitting(false);
+
+    try {
+      await createRegistration({
+        patientName: values.patientName,
+        patientAge: parseInt(values.patientAge),
+        patientGender: values.patientGender,
+        location: values.location,
+        condition: values.condition,
+        conditionDetails: values.conditionDetails,
+        urgencyLevel: values.urgencyLevel,
+        contactName: values.contactName,
+        contactPhone: values.contactPhone,
+        contactEmail: values.contactEmail,
+        relationship: values.relationship,
+      });
+
       setIsSuccess(true);
-      
-      toast({
-        title: "Patient Registration Submitted",
+      toast.success("Patient Registration Submitted", {
         description: "Thank you for registering a patient in need. Our team will review the information and reach out shortly.",
       });
-      
+
       // Reset form after successful submission
       setTimeout(() => {
         form.reset();
         setIsSuccess(false);
       }, 5000);
-    }, 1500);
+    } catch (error) {
+      toast.error("Submission Failed", {
+        description: "There was an error submitting the registration. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-[#73A580]/20 to-white pt-24 pb-16">
-        <div className="absolute top-0 left-0 right-0 h-8">
-          <Lifeline color="#E1AD01" height="12px" variant="thin" className="opacity-30" />
-        </div>
-        
-        <div className="container-custom relative z-10">
+      {/* Brand Navy Hero Section */}
+      <section className="bg-brand-navy pt-32 pb-32 text-white relative overflow-hidden">
+        <div className="container-custom relative z-10 text-center">
           <motion.div
             initial="hidden"
             animate="visible"
             variants={staggerChildren}
-            className="max-w-4xl mx-auto text-center"
+            className="max-w-4xl mx-auto"
           >
-            <motion.h1 variants={fadeIn} className="text-4xl font-bold mb-4 text-dark-purple">Register a Patient in Need</motion.h1>
-            <motion.div variants={fadeIn} className="w-32 h-6 mx-auto mb-6">
-              <Lifeline color="#E1AD01" height="12px" variant="minimal" />
-            </motion.div>
-            <motion.p variants={fadeIn} className="text-dark-purple/80 mb-8 text-lg">
-              Know someone who needs medical assistance but can't afford it? Register them here, and our team will 
-              review their case for potential support through our healthcare assistance program.
+            <motion.h1 variants={fadeIn} className="text-4xl md:text-6xl font-bold mb-6 font-heading">
+              Register a Patient in Need
+            </motion.h1>
+            <motion.p variants={fadeIn} className="text-xl text-gray-300 max-w-2xl mx-auto">
+              Know someone who needs medical assistance but can't afford it? Register them here,
+              and our team will review their case for potential support.
             </motion.p>
           </motion.div>
         </div>
-        
-        <div className="absolute bottom-0 left-0 right-0 h-8">
-          <Lifeline color="#E1AD01" height="12px" variant="thin" className="opacity-30 transform rotate-180" />
+        {/* Background decorative elements */}
+        <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white/5 to-transparent pointer-events-none" />
+        <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none translate-y-1/4 translate-x-1/4">
+          <HeartHandshake className="w-[500px] h-[500px] text-white" />
+        </div>
+        <div className="absolute left-10 top-20 opacity-5 pointer-events-none">
+          <Users className="w-32 h-32 text-white" />
         </div>
       </section>
-      
+
       {/* Registration Form */}
-      <section className="py-16">
+      <section className="py-16 -mt-20 relative z-10">
         <div className="container-custom">
           <div className="max-w-4xl mx-auto">
             {!isSuccess ? (
@@ -171,7 +189,7 @@ export default function RegisterPatientPage() {
                       Please provide accurate information about the patient who needs medical assistance.
                     </p>
                   </motion.div>
-                  
+
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                       {/* Patient Information Section */}
@@ -189,7 +207,7 @@ export default function RegisterPatientPage() {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="patientAge"
@@ -203,7 +221,7 @@ export default function RegisterPatientPage() {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="patientGender"
@@ -246,7 +264,7 @@ export default function RegisterPatientPage() {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="location"
@@ -261,14 +279,14 @@ export default function RegisterPatientPage() {
                           )}
                         />
                       </div>
-                      
+
                       {/* Medical Condition Section */}
                       <div className="pt-4 border-t border-gray-200">
                         <h2 className="text-2xl font-semibold mb-4 text-dark-purple flex items-center">
                           <Heart className="mr-2 h-6 w-6 text-mustard" />
                           Medical Condition
                         </h2>
-                        
+
                         <div className="grid md:grid-cols-2 gap-6">
                           <FormField
                             control={form.control}
@@ -283,7 +301,7 @@ export default function RegisterPatientPage() {
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={form.control}
                             name="urgencyLevel"
@@ -307,7 +325,7 @@ export default function RegisterPatientPage() {
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={form.control}
                             name="conditionDetails"
@@ -315,10 +333,10 @@ export default function RegisterPatientPage() {
                               <FormItem className="md:col-span-2">
                                 <FormLabel>Condition Details</FormLabel>
                                 <FormControl>
-                                  <Textarea 
-                                    placeholder="Please provide details about the medical condition, treatment history, and current needs..." 
-                                    className="min-h-[120px]" 
-                                    {...field} 
+                                  <Textarea
+                                    placeholder="Please provide details about the medical condition, treatment history, and current needs..."
+                                    className="min-h-[120px]"
+                                    {...field}
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -327,14 +345,14 @@ export default function RegisterPatientPage() {
                           />
                         </div>
                       </div>
-                      
+
                       {/* Contact Information Section */}
                       <div className="pt-4 border-t border-gray-200">
                         <h2 className="text-2xl font-semibold mb-4 text-dark-purple flex items-center">
                           <Phone className="mr-2 h-6 w-6 text-mustard" />
                           Contact Information
                         </h2>
-                        
+
                         <div className="grid md:grid-cols-2 gap-6">
                           <FormField
                             control={form.control}
@@ -349,7 +367,7 @@ export default function RegisterPatientPage() {
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={form.control}
                             name="relationship"
@@ -363,7 +381,7 @@ export default function RegisterPatientPage() {
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={form.control}
                             name="contactPhone"
@@ -377,7 +395,7 @@ export default function RegisterPatientPage() {
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={form.control}
                             name="contactEmail"
@@ -393,7 +411,7 @@ export default function RegisterPatientPage() {
                           />
                         </div>
                       </div>
-                      
+
                       {/* Consent */}
                       <div className="pt-4 border-t border-gray-200">
                         <FormField
@@ -417,9 +435,9 @@ export default function RegisterPatientPage() {
                           )}
                         />
                       </div>
-                      
-                      <Button 
-                        type="submit" 
+
+                      <Button
+                        type="submit"
                         className="w-full bg-suubi-green hover:bg-suubi-green/90 text-white"
                         disabled={isSubmitting}
                       >
@@ -433,24 +451,24 @@ export default function RegisterPatientPage() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-white p-8 rounded-xl shadow-md text-center"
+                className="bg-white p-8 rounded-xl shadow-brand-lg text-center"
               >
-                <div className="mx-auto w-16 h-16 bg-suubi-green/20 rounded-full flex items-center justify-center mb-6">
-                  <CheckCircle className="h-10 w-10 text-suubi-green" />
+                <div className="mx-auto w-16 h-16 bg-brand-teal/10 rounded-full flex items-center justify-center mb-6">
+                  <CheckCircle className="h-10 w-10 text-brand-teal" />
                 </div>
-                <h2 className="text-2xl font-bold text-dark-purple mb-4">Registration Submitted Successfully!</h2>
-                <p className="text-dark-purple/80 mb-6">
+                <h2 className="text-2xl font-bold text-brand-navy mb-4">Registration Submitted Successfully!</h2>
+                <p className="text-gray-600 mb-6">
                   Thank you for registering a patient in need. Our team will review the information and contact you within 2-3 business days.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link href="/donate">
-                    <Button className="bg-mustard hover:bg-mustard/80 text-dark-purple">
+                    <Button className="bg-brand-orange hover:bg-brand-orange/90 text-white">
                       Donate to Support Patients
                       <ChevronRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
                   <Link href="/">
-                    <Button variant="outline" className="border-suubi-green text-suubi-green hover:bg-suubi-green hover:text-white">
+                    <Button variant="outline" className="border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white">
                       Return to Homepage
                     </Button>
                   </Link>
@@ -460,52 +478,50 @@ export default function RegisterPatientPage() {
           </div>
         </div>
       </section>
-      
+
       {/* Info Cards */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-20 bg-gray-50">
         <div className="container-custom">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4 text-dark-purple">How It Works</h2>
-            <div className="w-32 h-6 mx-auto mb-4">
-              <Lifeline color="#E1AD01" height="12px" variant="minimal" />
-            </div>
-            <p className="text-dark-purple/80 max-w-3xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold mb-4 font-heading text-brand-navy">How It Works</h2>
+            <div className="w-24 h-1 bg-brand-orange mx-auto rounded-full mb-6"></div>
+            <p className="text-gray-600 max-w-2xl mx-auto text-lg">
               Our patient support program helps connect those in need with medical resources and financial assistance.
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
-            <Card className="border-[#73A580]/30">
-              <CardContent className="p-6 text-center">
-                <div className="h-12 w-12 bg-mustard/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FileText className="h-6 w-6 text-mustard" />
+            <Card className="border-gray-200 shadow-brand-soft hover:shadow-brand-md transition-all duration-300">
+              <CardContent className="p-8 text-center">
+                <div className="h-14 w-14 bg-brand-orange/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <FileText className="h-7 w-7 text-brand-orange" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2 text-dark-purple">1. Register</h3>
-                <p className="text-dark-purple/70">
+                <h3 className="text-xl font-bold mb-3 text-brand-navy">1. Register</h3>
+                <p className="text-gray-600 leading-relaxed">
                   Submit the patient's information and medical needs through our secure form.
                 </p>
               </CardContent>
             </Card>
-            
-            <Card className="border-[#73A580]/30">
-              <CardContent className="p-6 text-center">
-                <div className="h-12 w-12 bg-mustard/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <User className="h-6 w-6 text-mustard" />
+
+            <Card className="border-gray-200 shadow-brand-soft hover:shadow-brand-md transition-all duration-300">
+              <CardContent className="p-8 text-center">
+                <div className="h-14 w-14 bg-brand-teal/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <User className="h-7 w-7 text-brand-teal" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2 text-dark-purple">2. Assessment</h3>
-                <p className="text-dark-purple/70">
+                <h3 className="text-xl font-bold mb-3 text-brand-navy">2. Assessment</h3>
+                <p className="text-gray-600 leading-relaxed">
                   Our medical team reviews the case to determine eligibility and required assistance.
                 </p>
               </CardContent>
             </Card>
-            
-            <Card className="border-[#73A580]/30">
-              <CardContent className="p-6 text-center">
-                <div className="h-12 w-12 bg-mustard/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Heart className="h-6 w-6 text-mustard" />
+
+            <Card className="border-gray-200 shadow-brand-soft hover:shadow-brand-md transition-all duration-300">
+              <CardContent className="p-8 text-center">
+                <div className="h-14 w-14 bg-brand-navy/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Heart className="h-7 w-7 text-brand-navy" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2 text-dark-purple">3. Support</h3>
-                <p className="text-dark-purple/70">
+                <h3 className="text-xl font-bold mb-3 text-brand-navy">3. Support</h3>
+                <p className="text-gray-600 leading-relaxed">
                   Eligible patients receive medical care, medication, or financial assistance based on their needs.
                 </p>
               </CardContent>
@@ -513,36 +529,32 @@ export default function RegisterPatientPage() {
           </div>
         </div>
       </section>
-      
+
       {/* CTA */}
-      <section className="py-16">
+      <section className="py-20">
         <div className="container-custom">
-          <Card className="border-0 bg-mustard/10 overflow-hidden">
-            <CardContent className="p-8 md:p-12 relative">
-              <div className="absolute top-0 left-0 right-0 h-8">
-                <Lifeline color="#E1AD01" height="16px" variant="thin" className="opacity-30" />
-              </div>
-              
-              <div className="max-w-3xl mx-auto text-center">
-                <h2 className="text-2xl md:text-3xl font-bold mb-4 text-dark-purple">Want to Help More?</h2>
-                <p className="text-dark-purple/80 mb-8">
-                  Your donations help us provide medical care to patients who cannot afford it. Consider supporting our mission to make healthcare accessible to all.
-                </p>
-                <Link href="/donate">
-                  <Button size="lg" className="bg-mustard hover:bg-suubi-green text-dark-purple hover:text-white transition-colors">
-                    Donate Now
-                    <Heart className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-              </div>
-              
-              <div className="absolute bottom-0 left-0 right-0 h-8">
-                <Lifeline color="#E1AD01" height="16px" variant="thin" className="opacity-30 transform rotate-180" />
-              </div>
-            </CardContent>
-          </Card>
+          <div className="relative rounded-3xl overflow-hidden bg-brand-navy p-12 text-center">
+            {/* Background decoration */}
+            <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white/10 to-transparent pointer-events-none" />
+            <div className="absolute -left-10 -bottom-10 opacity-10">
+              <HeartHandshake className="w-64 h-64 text-white" />
+            </div>
+
+            <div className="relative z-10 max-w-3xl mx-auto">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 font-heading text-white">Want to Help More?</h2>
+              <p className="text-gray-300 mb-8 text-lg">
+                Your donations help us provide medical care to patients who cannot afford it. Consider supporting our mission to make healthcare accessible to all.
+              </p>
+              <Link href="/donate">
+                <Button size="lg" className="bg-brand-orange hover:bg-brand-orange/90 text-white border-none h-12 px-8 text-lg font-medium shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
+                  Donate Now
+                  <Heart className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
     </div>
   );
-} 
+}

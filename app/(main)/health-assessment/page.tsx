@@ -132,25 +132,37 @@ export default function HealthAssessmentPage() {
   const canProceedFromSymptoms = selectedSymptoms.length > 0;
 
   return (
-    <div className="min-h-screen py-20 lg:py-24 bg-gradient-to-br from-brand-sky/5 via-white to-brand-teal/5">
-      <div className="container-custom max-w-4xl">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-10"
-        >
-          <Badge variant="secondary" className="mb-4 bg-brand-teal/10 text-brand-teal border-brand-teal/20">
-            <HeartPulse className="w-3 h-3 mr-1" />
-            Health Assessment
-          </Badge>
-          <h1 className="text-3xl md:text-4xl font-bold text-brand-navy mb-3">
-            Let's Check Your Health
-          </h1>
-          <p className="text-brand-navy/60 max-w-lg mx-auto">
-            Answer a few questions to get personalized health recommendations
-          </p>
-        </motion.div>
+    <div className="min-h-screen bg-gradient-to-br from-brand-sky/5 via-white to-brand-teal/5">
+      {/* Brand Navy Hero */}
+      <section className="bg-brand-navy pt-32 pb-32 text-white relative overflow-hidden">
+        <div className="container-custom relative z-10 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Badge variant="secondary" className="mb-4 bg-white/10 text-white border-white/20">
+              <HeartPulse className="w-3 h-3 mr-1" />
+              Health Assessment
+            </Badge>
+            <h1 className="text-4xl md:text-6xl font-bold mb-4 font-heading">
+              Let's Check Your Health
+            </h1>
+            <p className="text-xl text-gray-300 max-w-lg mx-auto">
+              Answer a few questions to get personalized health recommendations
+            </p>
+          </motion.div>
+        </div>
+        {/* Background decorative elements */}
+        <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white/5 to-transparent pointer-events-none" />
+        <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none translate-y-1/4 translate-x-1/4">
+          <Activity className="w-[500px] h-[500px] text-white" />
+        </div>
+        <div className="absolute left-10 top-20 opacity-5 pointer-events-none">
+          <HeartPulse className="w-32 h-32 text-white" />
+        </div>
+      </section>
+
+      <div className="container-custom max-w-4xl -mt-20 relative z-20 pb-20">
 
         {/* Progress Bar */}
         <motion.div
@@ -353,8 +365,8 @@ export default function HealthAssessmentPage() {
                       <span className={cn(
                         "text-sm font-semibold px-3 py-1 rounded-full",
                         painLevel[0] <= 3 ? "bg-green-100 text-green-700" :
-                        painLevel[0] <= 6 ? "bg-amber-100 text-amber-700" :
-                        "bg-red-100 text-red-700"
+                          painLevel[0] <= 6 ? "bg-amber-100 text-amber-700" :
+                            "bg-red-100 text-red-700"
                       )}>
                         {painLevel[0]}/10
                       </span>
@@ -466,7 +478,7 @@ export default function HealthAssessmentPage() {
                   {/* Recommendations */}
                   <div className="space-y-3">
                     <Label className="text-sm text-brand-navy/60 block">Recommendations</Label>
-                    
+
                     <div className="p-4 rounded-xl bg-brand-teal/5 border border-brand-teal/20">
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 rounded-lg bg-brand-teal/20 flex items-center justify-center flex-shrink-0">
@@ -501,7 +513,7 @@ export default function HealthAssessmentPage() {
               {/* Action Buttons */}
               <div className="grid sm:grid-cols-2 gap-4">
                 <Link href="/appointments">
-                  <Button 
+                  <Button
                     className="w-full bg-gradient-to-r from-brand-orange to-amber-500 hover:from-amber-500 hover:to-brand-orange text-white shadow-lg group"
                     size="lg"
                   >
@@ -511,7 +523,7 @@ export default function HealthAssessmentPage() {
                   </Button>
                 </Link>
                 <Link href="/chat">
-                  <Button 
+                  <Button
                     variant="outline"
                     className="w-full border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white"
                     size="lg"
@@ -549,7 +561,7 @@ export default function HealthAssessmentPage() {
           transition={{ delay: 0.5 }}
           className="text-center text-xs text-brand-navy/40 mt-8"
         >
-          This assessment is for informational purposes only and does not constitute medical advice. 
+          This assessment is for informational purposes only and does not constitute medical advice.
           Always consult a healthcare professional for proper diagnosis and treatment.
         </motion.p>
       </div>

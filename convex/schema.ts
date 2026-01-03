@@ -8,7 +8,7 @@ export default defineSchema({
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
-    
+
     // Patient-specific fields (all users are patients by default)
     dateOfBirth: v.optional(v.number()),       // Date of birth (timestamp)
     gender: v.optional(v.union(
@@ -22,14 +22,14 @@ export default defineSchema({
     medicalHistory: v.optional(v.array(v.string())), // Medical history notes
     allergies: v.optional(v.array(v.string())), // Known allergies
     currentMedications: v.optional(v.array(v.string())), // Current medications
-    
+
     // Common fields
     createdAt: v.optional(v.number()),             // Made optional to handle existing data
     updatedAt: v.optional(v.number()),         // When the user was last updated
   })
-  .index("by_clerkId", ["clerkId"])
-  .index("by_email", ["email"])               // Added email index for lookups
-  .index("by_createdAt", ["createdAt"]),
+    .index("by_clerkId", ["clerkId"])
+    .index("by_email", ["email"])               // Added email index for lookups
+    .index("by_createdAt", ["createdAt"]),
 
   news: defineTable({
     title: v.string(),             // Headline of the news article
@@ -65,15 +65,15 @@ export default defineSchema({
     ),
     createdAt: v.optional(v.number()), // Made optional to handle existing data
   })
-  .index("by_publishedAt", ["publishedAt"])
-  .index("by_category", ["category"])
-  .index("by_authorId", ["authorId"])        // Updated index name
-  .index("by_isPublished", ["isPublished"])
-  .index("by_institution", ["institution"])
-  .index("by_category_publishedAt", ["category", "publishedAt"])
-  .index("by_category_isPublished", ["category", "isPublished"])
-  .index("by_institution_isPublished", ["institution", "isPublished"])
-  .index("by_createdAt", ["createdAt"]),     // Added createdAt index
+    .index("by_publishedAt", ["publishedAt"])
+    .index("by_category", ["category"])
+    .index("by_authorId", ["authorId"])        // Updated index name
+    .index("by_isPublished", ["isPublished"])
+    .index("by_institution", ["institution"])
+    .index("by_category_publishedAt", ["category", "publishedAt"])
+    .index("by_category_isPublished", ["category", "isPublished"])
+    .index("by_institution_isPublished", ["institution", "isPublished"])
+    .index("by_createdAt", ["createdAt"]),     // Added createdAt index
 
   programs: defineTable({
     name: v.string(),                     // Program title
@@ -103,16 +103,16 @@ export default defineSchema({
     approvedById: v.optional(v.id("users")), // Who approved the program
     createdById: v.optional(v.id("users")), // Who created the program (optional for existing data)
   })
-  .index("by_startDate", ["startDate"])
-  .index("by_status", ["status"])
-  .index("by_isFeatured", ["isFeatured"])
-  .index("by_approved", ["approved"])
-  .index("by_status_approved", ["status", "approved"])
-  .index("by_isFeatured_approved", ["isFeatured", "approved"])
-  .index("by_createdById", ["createdById"])
-  .index("by_approvedById", ["approvedById"])
-  .index("by_createdAt", ["createdAt"]),
-  
+    .index("by_startDate", ["startDate"])
+    .index("by_status", ["status"])
+    .index("by_isFeatured", ["isFeatured"])
+    .index("by_approved", ["approved"])
+    .index("by_status_approved", ["status", "approved"])
+    .index("by_isFeatured_approved", ["isFeatured", "approved"])
+    .index("by_createdById", ["createdById"])
+    .index("by_approvedById", ["approvedById"])
+    .index("by_createdAt", ["createdAt"]),
+
   // Subscribers table for email subscriptions
   subscribers: defineTable({
     email: v.string(),                    // Subscriber email address
@@ -121,16 +121,16 @@ export default defineSchema({
     createdAt: v.number(),                // Timestamp for when the subscription was added
     updatedAt: v.optional(v.number()),    // When subscription was last updated
   })
-  .index("by_email", ["email"])
-  .index("by_isActive", ["isActive"])    // Added index for active subscribers
-  .index("by_createdAt", ["createdAt"]),
+    .index("by_email", ["email"])
+    .index("by_isActive", ["isActive"])    // Added index for active subscribers
+    .index("by_createdAt", ["createdAt"]),
 
   // Gallery table for media items (photos and videos)
   gallery: defineTable({
     title: v.optional(v.string()),        // Title of the media item
     description: v.optional(v.string()),  // Description of the media item
     type: v.union(                        // Made required and more strict
-      v.literal("image"), 
+      v.literal("image"),
       v.literal("video")
     ),
     url: v.string(),                      // Made required - URL of the media file
@@ -156,14 +156,14 @@ export default defineSchema({
     isPublished: v.boolean(),            // Whether the media is published/visible
     uploadedById: v.optional(v.id("users")), // Reference to the uploader
   })
-  .index("by_type", ["type"])
-  .index("by_category", ["category"])
-  .index("by_date", ["date"])
-  .index("by_isPublished", ["isPublished"])
-  .index("by_createdAt", ["createdAt"])
-  .index("by_category_isPublished", ["category", "isPublished"])
-  .index("by_type_isPublished", ["type", "isPublished"])
-  .index("by_uploadedById", ["uploadedById"]), // Added index for uploader
+    .index("by_type", ["type"])
+    .index("by_category", ["category"])
+    .index("by_date", ["date"])
+    .index("by_isPublished", ["isPublished"])
+    .index("by_createdAt", ["createdAt"])
+    .index("by_category_isPublished", ["category", "isPublished"])
+    .index("by_type_isPublished", ["type", "isPublished"])
+    .index("by_uploadedById", ["uploadedById"]), // Added index for uploader
 
   // Cron state table for persistent cron job state
   cron_state: defineTable({
@@ -172,7 +172,7 @@ export default defineSchema({
     createdAt: v.optional(v.number()),    // Made optional to handle existing data
     updatedAt: v.optional(v.number()),   // Added for consistency
   })
-  .index("by_key", ["key"]),
+    .index("by_key", ["key"]),
 
   // Chat rooms table
   rooms: defineTable({
@@ -186,9 +186,9 @@ export default defineSchema({
     createdAt: v.number(),               // When the room was created
     updatedAt: v.optional(v.number()),   // When the room was last updated
   })
-  .index("by_userIds", ["userIds"])
-  .index("by_type", ["type"])
-  .index("by_createdAt", ["createdAt"]),
+    .index("by_userIds", ["userIds"])
+    .index("by_type", ["type"])
+    .index("by_createdAt", ["createdAt"]),
 
   // Chat messages table
   messages: defineTable({
@@ -209,10 +209,10 @@ export default defineSchema({
     updatedAt: v.optional(v.number()),   // When the message was last updated
     editedAt: v.optional(v.number()),    // When the message was edited
   })
-  .index("by_roomId", ["roomId"])
-  .index("by_senderId", ["senderId"])
-  .index("by_createdAt", ["createdAt"])
-  .index("by_roomId_createdAt", ["roomId", "createdAt"]),
+    .index("by_roomId", ["roomId"])
+    .index("by_senderId", ["senderId"])
+    .index("by_createdAt", ["createdAt"])
+    .index("by_roomId_createdAt", ["roomId", "createdAt"]),
 
   // Typing status table for real-time typing indicators
   typing_status: defineTable({
@@ -221,10 +221,10 @@ export default defineSchema({
     isTyping: v.boolean(),
     lastTypingAt: v.number(),
   })
-  .index("by_roomId", ["roomId"])
-  .index("by_userId", ["userId"])
-  .index("by_roomId_userId", ["roomId", "userId"])
-  .index("by_roomId_isTyping", ["roomId", "isTyping"]),
+    .index("by_roomId", ["roomId"])
+    .index("by_userId", ["userId"])
+    .index("by_roomId_userId", ["roomId", "userId"])
+    .index("by_roomId_isTyping", ["roomId", "isTyping"]),
 
   // Staff profiles table - unified table for all staff types (source of truth for roles)
   staff_profiles: defineTable({
@@ -258,15 +258,15 @@ export default defineSchema({
     createdAt: v.number(),               // When the profile was created
     updatedAt: v.optional(v.number()),   // When the profile was last updated
   })
-  .index("by_userId", ["userId"])
-  .index("by_role", ["role"])
-  .index("by_subRole", ["subRole"])
-  .index("by_role_subRole", ["role", "subRole"])
-  .index("by_isAvailable", ["isAvailable"])
-  .index("by_verified", ["verified"])
-  .index("by_rating", ["rating"])
-  .index("by_createdAt", ["createdAt"])
-  .index("by_verifiedById", ["verifiedById"]),
+    .index("by_userId", ["userId"])
+    .index("by_role", ["role"])
+    .index("by_subRole", ["subRole"])
+    .index("by_role_subRole", ["role", "subRole"])
+    .index("by_isAvailable", ["isAvailable"])
+    .index("by_verified", ["verified"])
+    .index("by_rating", ["rating"])
+    .index("by_createdAt", ["createdAt"])
+    .index("by_verifiedById", ["verifiedById"]),
 
 
   // Available Times table
@@ -289,19 +289,19 @@ export default defineSchema({
     createdAt: v.number(),                // When the slot was created
     updatedAt: v.optional(v.number()),    // When the slot was last updated
   })
-  .index("by_staffProfileId", ["staffProfileId"])
-  .index("by_dayOfWeek", ["dayOfWeek"])
-  .index("by_isRecurring", ["isRecurring"])
-  .index("by_date", ["date"])
-  .index("by_isAvailable", ["isAvailable"])
-  .index("by_staffProfileId_dayOfWeek", ["staffProfileId", "dayOfWeek"])
-  .index("by_staffProfileId_date", ["staffProfileId", "date"])
-  .index("by_staffProfileId_isAvailable", ["staffProfileId", "isAvailable"]),
+    .index("by_staffProfileId", ["staffProfileId"])
+    .index("by_dayOfWeek", ["dayOfWeek"])
+    .index("by_isRecurring", ["isRecurring"])
+    .index("by_date", ["date"])
+    .index("by_isAvailable", ["isAvailable"])
+    .index("by_staffProfileId_dayOfWeek", ["staffProfileId", "dayOfWeek"])
+    .index("by_staffProfileId_date", ["staffProfileId", "date"])
+    .index("by_staffProfileId_isAvailable", ["staffProfileId", "isAvailable"]),
 
   // Appointments table
   appointments: defineTable({
     patientId: v.id("users"),            // Reference to the patient
-    staffProfileId: v.id("staff_profiles"), // Reference to the staff profile instead of user
+    staffProfileId: v.optional(v.id("staff_profiles")), // Reference to the staff profile (optional)
     appointmentDate: v.number(),         // Date and time of the appointment (timestamp)
     duration: v.number(),                // Duration in minutes (default 30)
     status: v.union(
@@ -352,19 +352,84 @@ export default defineSchema({
     updatedAt: v.optional(v.number()),   // When the appointment was last updated
     rescheduledFrom: v.optional(v.id("appointments")), // Reference to original appointment if rescheduled
   })
-  .index("by_patientId", ["patientId"])
-  .index("by_staffProfileId", ["staffProfileId"]) // Updated index name
-  .index("by_status", ["status"])
-  .index("by_appointmentDate", ["appointmentDate"])
-  .index("by_patientId_status", ["patientId", "status"])
-  .index("by_staffProfileId_status", ["staffProfileId", "status"])
-  .index("by_appointmentDate_status", ["appointmentDate", "status"])
-  .index("by_createdById", ["createdById"])
-  .index("by_approvedById", ["approvedById"])
-  .index("by_patientId_appointmentDate", ["patientId", "appointmentDate"])
-  .index("by_staffProfileId_appointmentDate", ["staffProfileId", "appointmentDate"])
-  .index("by_appointmentType", ["appointmentType"])
-  .index("by_priority", ["priority"])
-  .index("by_paymentStatus", ["paymentStatus"])
-  .index("by_createdAt", ["createdAt"]),
+    .index("by_patientId", ["patientId"])
+    .index("by_staffProfileId", ["staffProfileId"]) // Updated index name
+    .index("by_status", ["status"])
+    .index("by_appointmentDate", ["appointmentDate"])
+    .index("by_patientId_status", ["patientId", "status"])
+    .index("by_staffProfileId_status", ["staffProfileId", "status"])
+    .index("by_appointmentDate_status", ["appointmentDate", "status"])
+    .index("by_createdById", ["createdById"])
+    .index("by_approvedById", ["approvedById"])
+    .index("by_patientId_appointmentDate", ["patientId", "appointmentDate"])
+    .index("by_staffProfileId_appointmentDate", ["staffProfileId", "appointmentDate"])
+    .index("by_appointmentType", ["appointmentType"])
+    .index("by_priority", ["priority"])
+    .index("by_paymentStatus", ["paymentStatus"])
+    .index("by_createdAt", ["createdAt"]),
+
+  // Patient registrations for assistance program
+  patient_registrations: defineTable({
+    // Patient information
+    patientName: v.string(),
+    patientAge: v.number(),
+    patientGender: v.union(
+      v.literal("male"),
+      v.literal("female"),
+      v.literal("other")
+    ),
+    location: v.string(),
+
+    // Medical condition
+    condition: v.string(),
+    conditionDetails: v.string(),
+    urgencyLevel: v.union(
+      v.literal("low"),
+      v.literal("medium"),
+      v.literal("high"),
+      v.literal("critical")
+    ),
+
+    // Contact information
+    contactName: v.string(),
+    contactPhone: v.string(),
+    contactEmail: v.string(),
+    relationship: v.string(),
+
+    // Status and tracking
+    status: v.union(
+      v.literal("pending"),
+      v.literal("reviewing"),
+      v.literal("approved"),
+      v.literal("rejected"),
+      v.literal("completed")
+    ),
+    reviewedById: v.optional(v.id("users")),
+    reviewNotes: v.optional(v.string()),
+
+    // Timestamps
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_status", ["status"])
+    .index("by_urgencyLevel", ["urgencyLevel"])
+    .index("by_createdAt", ["createdAt"]),
+
+  // Contact form inquiries
+  contact_inquiries: defineTable({
+    name: v.string(),
+    email: v.string(),
+    phone: v.optional(v.string()),
+    message: v.string(),
+    status: v.union(
+      v.literal("new"),
+      v.literal("read"),
+      v.literal("replied"),
+      v.literal("archived")
+    ),
+    createdAt: v.number(),
+    readAt: v.optional(v.number()),
+  })
+    .index("by_status", ["status"])
+    .index("by_createdAt", ["createdAt"]),
 });

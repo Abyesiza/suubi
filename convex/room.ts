@@ -4,8 +4,8 @@ import { Id } from "./_generated/dataModel";
 
 // Create or get a room for two users (patient-to-staff messaging)
 export const createOrGetRoom = mutation({
-  args: { 
-    userId1: v.id("users"), 
+  args: {
+    userId1: v.id("users"),
     userId2: v.id("users"),
     roomType: v.optional(v.union(
       v.literal("direct"),
@@ -18,25 +18,25 @@ export const createOrGetRoom = mutation({
     // Verify both users exist
     const user1 = await ctx.db.get(userId1);
     const user2 = await ctx.db.get(userId2);
-    
+
     if (!user1 || !user2) {
       throw new Error("One or both users not found");
     }
 
     // Always store userIds in sorted order for uniqueness
     const ids = [userId1, userId2].sort();
-    
+
     // Check if room already exists by querying all rooms and filtering in JS
     // This is more reliable than complex Convex filters for array comparisons
     const allRooms = await ctx.db.query("rooms").collect();
-    
+
     const existingRoom = allRooms.find(room => {
       // Check if room type matches
       if (room.type !== roomType) return false;
-      
+
       // Check if it's a 2-person room
       if (room.userIds.length !== 2) return false;
-      
+
       // Sort the room's userIds and compare with our sorted IDs
       const sortedRoomIds = [...room.userIds].sort();
       return sortedRoomIds[0] === ids[0] && sortedRoomIds[1] === ids[1];
@@ -47,12 +47,12 @@ export const createOrGetRoom = mutation({
     }
 
     // Create new room
-    const roomId = await ctx.db.insert("rooms", { 
+    const roomId = await ctx.db.insert("rooms", {
       userIds: ids,
       type: roomType,
       createdAt: Date.now(),
     });
-    
+
     return roomId;
   },
 });
@@ -137,6 +137,7 @@ export const listRoomsForUser = query({
         bio: v.optional(v.string()),
         profileImage: v.optional(v.string()),
         isAvailable: v.optional(v.boolean()),
+        verified: v.optional(v.boolean()),
       }),
       v.null()
     ),
@@ -171,7 +172,7 @@ export const listRoomsForUser = query({
             .query("staff_profiles")
             .withIndex("by_userId", q => q.eq("userId", otherUserId))
             .first();
-          
+
           if (profile) {
             staffProfile = {
               _id: profile._id,
@@ -180,6 +181,7 @@ export const listRoomsForUser = query({
               bio: profile.bio,
               profileImage: profile.profileImage,
               isAvailable: profile.isAvailable,
+              verified: profile.verified,
             };
           }
         }
@@ -284,6 +286,7 @@ export const getRoomDetails = query({
             bio: v.optional(v.string()),
             profileImage: v.optional(v.string()),
             isAvailable: v.optional(v.boolean()),
+            verified: v.optional(v.boolean()),
           }),
           v.null()
         ),
@@ -323,6 +326,7 @@ export const getRoomDetails = query({
           bio: staffProfile.bio,
           profileImage: staffProfile.profileImage,
           isAvailable: staffProfile.isAvailable,
+          verified: staffProfile.verified,
         } : null,
       });
     }
@@ -419,34 +423,34 @@ export const cleanupDuplicateRooms = mutation({
     try {
       // Get all rooms
       const allRooms = await ctx.db.query("rooms").collect();
-      
+
       // Group rooms by their participant pairs and type
       const roomGroups = new Map<string, typeof allRooms>();
-      
+
       for (const room of allRooms) {
         if (room.userIds.length === 2) {
           // Create a unique key for this room combination
           const sortedIds = [...room.userIds].sort();
           const key = `${sortedIds[0]}_${sortedIds[1]}_${room.type || 'direct'}`;
-          
+
           if (!roomGroups.has(key)) {
             roomGroups.set(key, []);
           }
           roomGroups.get(key)!.push(room);
         }
       }
-      
+
       // Find and remove duplicates (keep the oldest room)
       for (const [key, rooms] of Array.from(roomGroups.entries())) {
         if (rooms.length > 1) {
           duplicatesFound += rooms.length - 1;
-          
+
           // Sort by creation time (oldest first)
           rooms.sort((a, b) => a.createdAt - b.createdAt);
-          
+
           // Keep the first (oldest) room, delete the rest
           const roomsToDelete = rooms.slice(1);
-          
+
           for (const roomToDelete of roomsToDelete) {
             try {
               // Delete messages in this room first
@@ -454,32 +458,32 @@ export const cleanupDuplicateRooms = mutation({
                 .query("messages")
                 .withIndex("by_roomId", q => q.eq("roomId", roomToDelete._id))
                 .collect();
-              
+
               for (const message of messages) {
                 await ctx.db.delete(message._id);
               }
-              
+
               // Delete typing status entries
               const typingStatuses = await ctx.db
                 .query("typing_status")
                 .withIndex("by_roomId", q => q.eq("roomId", roomToDelete._id))
                 .collect();
-              
+
               for (const status of typingStatuses) {
                 await ctx.db.delete(status._id);
               }
-              
+
               // Delete the room
               await ctx.db.delete(roomToDelete._id);
               duplicatesRemoved++;
-              
+
             } catch (error) {
               errors.push(`Failed to delete room ${roomToDelete._id}: ${error}`);
             }
           }
         }
       }
-      
+
     } catch (error) {
       errors.push(`Cleanup failed: ${error}`);
     }

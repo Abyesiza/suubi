@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ import {
   Heart,
   ClipboardList,
   User,
+  Stethoscope,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -70,17 +72,17 @@ export function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const navItems = role === "admin" 
-    ? adminNavItems 
-    : role === "staff" 
-    ? staffNavItems 
-    : patientNavItems;
+  const navItems = role === "admin"
+    ? adminNavItems
+    : role === "staff"
+      ? staffNavItems
+      : patientNavItems;
 
-  const roleTitle = role === "admin" 
-    ? "Admin Portal" 
-    : role === "staff" 
-    ? "Staff Portal" 
-    : "Patient Portal";
+  const roleTitle = role === "admin"
+    ? "Admin Portal"
+    : role === "staff"
+      ? "Staff Portal"
+      : "Patient Portal";
 
   return (
     <motion.aside
@@ -88,12 +90,12 @@ export function Sidebar({ role }: SidebarProps) {
       animate={{ width: isCollapsed ? 80 : 280 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
       className={cn(
-        "relative flex h-screen flex-col border-r border-border bg-card",
-        "shadow-sm"
+        "relative flex h-screen flex-col bg-brand-navy text-white",
+        "shadow-lg"
       )}
     >
       {/* Logo and Title */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-border">
+      <div className="flex h-16 items-center justify-between px-4 border-b border-white/10">
         <AnimatePresence mode="wait">
           {!isCollapsed && (
             <motion.div
@@ -103,19 +105,31 @@ export function Sidebar({ role }: SidebarProps) {
               transition={{ duration: 0.2 }}
               className="flex items-center gap-3"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-teal text-white">
-                <Activity className="h-5 w-5" />
+              <div className="relative h-9 w-9 flex items-center justify-center rounded-lg bg-white/10">
+                <Image
+                  src="/logo.png"
+                  alt="Suubi"
+                  width={28}
+                  height={28}
+                  className="object-contain"
+                />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-semibold text-foreground">Suubi</span>
-                <span className="text-xs text-muted-foreground">{roleTitle}</span>
+                <span className="text-sm font-bold">Suubi</span>
+                <span className="text-xs text-white/60">{roleTitle}</span>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
         {isCollapsed && (
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-teal text-white mx-auto">
-            <Activity className="h-5 w-5" />
+          <div className="relative h-9 w-9 flex items-center justify-center rounded-lg bg-white/10 mx-auto">
+            <Image
+              src="/logo.png"
+              alt="Suubi"
+              width={28}
+              height={28}
+              className="object-contain"
+            />
           </div>
         )}
       </div>
@@ -131,10 +145,10 @@ export function Sidebar({ role }: SidebarProps) {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
                     isActive
-                      ? "bg-brand-teal/10 text-brand-teal"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      ? "bg-white/20 text-white shadow-sm"
+                      : "text-white/70 hover:bg-white/10 hover:text-white"
                   )}
                 >
                   <item.icon className={cn("h-5 w-5 shrink-0", isActive && "text-brand-teal")} />
@@ -163,13 +177,13 @@ export function Sidebar({ role }: SidebarProps) {
         </nav>
       </ScrollArea>
 
-      {/* Collapse Button */}
-      <div className="border-t border-border p-3">
+      {/* Footer with Collapse Button */}
+      <div className="border-t border-white/10 p-3">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="w-full justify-center"
+          className="w-full justify-center text-white/70 hover:text-white hover:bg-white/10"
         >
           {isCollapsed ? (
             <ChevronRight className="h-4 w-4" />

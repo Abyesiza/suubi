@@ -30,7 +30,7 @@ export const getPatientAppointments = query({
     _id: v.id("appointments"),
     _creationTime: v.number(),
     patientId: v.id("users"),
-    staffProfileId: v.id("staff_profiles"),
+    staffProfileId: v.optional(v.id("staff_profiles")),
     appointmentDate: v.number(),
     duration: v.number(),
     status: v.union(
@@ -89,7 +89,7 @@ export const getPatientAppointments = query({
     if (args.status) {
       query = ctx.db
         .query("appointments")
-        .withIndex("by_patientId_status", (q) => 
+        .withIndex("by_patientId_status", (q) =>
           q.eq("patientId", args.patientId).eq("status", args.status!)
         );
     }
@@ -123,7 +123,7 @@ export const getPatientAppointmentsWithStaff = query({
     _id: v.id("appointments"),
     _creationTime: v.number(),
     patientId: v.id("users"),
-    staffProfileId: v.id("staff_profiles"),
+    staffProfileId: v.optional(v.id("staff_profiles")),
     appointmentDate: v.number(),
     duration: v.number(),
     status: v.union(
@@ -227,7 +227,7 @@ export const getPatientAppointmentsWithStaff = query({
     if (args.status) {
       query = ctx.db
         .query("appointments")
-        .withIndex("by_patientId_status", (q) => 
+        .withIndex("by_patientId_status", (q) =>
           q.eq("patientId", args.patientId).eq("status", args.status!)
         );
     }
@@ -241,7 +241,7 @@ export const getPatientAppointmentsWithStaff = query({
       _id: Id<"appointments">;
       _creationTime: number;
       patientId: Id<"users">;
-      staffProfileId: Id<"staff_profiles">;
+      staffProfileId?: Id<"staff_profiles">;
       appointmentDate: number;
       duration: number;
       status: any;
@@ -278,6 +278,7 @@ export const getPatientAppointmentsWithStaff = query({
     }> = [];
 
     for (const appointment of appointments) {
+      if (!appointment.staffProfileId) continue;
       const staffProfile = await ctx.db.get(appointment.staffProfileId);
       if (!staffProfile) {
         // Skip orphaned appointments that reference missing staff profiles
@@ -336,7 +337,7 @@ export const getDoctorAppointments = query({
     _id: v.id("appointments"),
     _creationTime: v.number(),
     patientId: v.id("users"),
-    staffProfileId: v.id("staff_profiles"),
+    staffProfileId: v.optional(v.id("staff_profiles")),
     appointmentDate: v.number(),
     duration: v.number(),
     status: v.union(
@@ -395,7 +396,7 @@ export const getDoctorAppointments = query({
     if (args.status) {
       query = ctx.db
         .query("appointments")
-        .withIndex("by_staffProfileId_status", (q) => 
+        .withIndex("by_staffProfileId_status", (q) =>
           q.eq("staffProfileId", args.staffProfileId).eq("status", args.status!)
         );
     }
@@ -411,8 +412,8 @@ export const getDoctorAppointments = query({
       const endOfDay = new Date(args.date);
       endOfDay.setHours(23, 59, 59, 999);
 
-      return appointments.filter(appointment => 
-        appointment.appointmentDate >= startOfDay.getTime() && 
+      return appointments.filter(appointment =>
+        appointment.appointmentDate >= startOfDay.getTime() &&
         appointment.appointmentDate <= endOfDay.getTime()
       );
     }
@@ -433,7 +434,7 @@ export const getAppointment = query({
       _id: v.id("appointments"),
       _creationTime: v.number(),
       patientId: v.id("users"),
-      staffProfileId: v.id("staff_profiles"),
+      staffProfileId: v.optional(v.id("staff_profiles")),
       appointmentDate: v.number(),
       duration: v.number(),
       status: v.union(
@@ -504,7 +505,7 @@ export const getUpcomingDoctorAppointments = query({
     _id: v.id("appointments"),
     _creationTime: v.number(),
     patientId: v.id("users"),
-    staffProfileId: v.id("staff_profiles"),
+    staffProfileId: v.optional(v.id("staff_profiles")),
     appointmentDate: v.number(),
     duration: v.number(),
     status: v.union(
@@ -562,10 +563,10 @@ export const getUpcomingDoctorAppointments = query({
 
     const appointments = await ctx.db
       .query("appointments")
-      .withIndex("by_staffProfileId_appointmentDate", (q) => 
+      .withIndex("by_staffProfileId_appointmentDate", (q) =>
         q.eq("staffProfileId", args.staffProfileId)
       )
-      .filter((q: any) => 
+      .filter((q: any) =>
         q.and(
           q.gte(q.field("appointmentDate"), now),
           q.lte(q.field("appointmentDate"), futureDate),
@@ -588,7 +589,7 @@ export const getUpcomingDoctorAppointments = query({
 export const createAppointment = mutation({
   args: {
     patientId: v.id("users"),
-    staffProfileId: v.id("staff_profiles"),
+    staffProfileId: v.optional(v.id("staff_profiles")),
     appointmentDate: v.number(),
     duration: v.optional(v.number()),
     appointmentType: v.optional(v.union(
@@ -622,32 +623,41 @@ export const createAppointment = mutation({
       throw new Error("Patient not found");
     }
 
-    // Verify staff profile exists and has appropriate role
-    const staffProfile = await ctx.db.get(args.staffProfileId);
+    // Processing if staff is assigned
+    if (args.staffProfileId) {
+      // Verify staff profile exists and has appropriate role
+      const staffProfile = await ctx.db.get(args.staffProfileId);
 
-    if (!staffProfile) {
-      throw new Error("User is not authorized to provide medical services - no staff profile found");
-    }
+      if (!staffProfile) {
+        throw new Error("User is not authorized to provide medical services - no staff profile found");
+      }
 
-    if (!["doctor", "nurse", "allied_health"].includes(staffProfile.role)) {
-      throw new Error("User is not authorized to provide medical services - invalid role");
-    }
+      if (!["doctor", "nurse", "allied_health"].includes(staffProfile.role)) {
+        throw new Error("User is not authorized to provide medical services - invalid role");
+      }
 
-    // Check if doctor is available at the requested time
-    const isAvailable = await checkDoctorAvailability(ctx, args.staffProfileId, args.appointmentDate, args.duration || 30);
-    if (!isAvailable) {
-      throw new Error("Doctor is not available at the requested time");
-    }
-
-    // Check for conflicts with existing appointments
-    const hasConflict = await checkAppointmentConflict(ctx, args.staffProfileId, args.appointmentDate, args.duration || 30);
-    if (hasConflict) {
-      throw new Error("Time slot conflicts with existing appointment");
+      // OPTIONAL: Check availability
+      // We have disabled strict availability checks to allow patients to request any time.
+      // Staff will confirm or reschedule manually.
+      /*
+      if (args.staffProfileId) {
+        const isAvailable = await checkDoctorAvailability(ctx, args.staffProfileId, args.appointmentDate, duration);
+        if (!isAvailable) {
+          throw new Error("Doctor is not available at the requested time");
+        }
+      }
+      */   /*
+      // Check for conflicts with existing appointments
+      const hasConflict = await checkAppointmentConflict(ctx, args.staffProfileId, args.appointmentDate, args.duration || 30);
+      if (hasConflict) {
+        throw new Error("Time slot conflicts with existing appointment");
+      }
+    */
     }
 
     const appointmentId = await ctx.db.insert("appointments", {
       patientId: args.patientId,
-      staffProfileId: args.staffProfileId,
+      staffProfileId: args.staffProfileId, // Can be undefined
       appointmentDate: args.appointmentDate,
       duration: args.duration || 30,
       status: "pending",
@@ -986,17 +996,19 @@ export const deleteAppointment = mutation({
  */
 async function checkDoctorAvailability(
   ctx: any,
-  staffProfileId: Id<"staff_profiles">,
+  staffProfileId: Id<"staff_profiles"> | undefined,
   appointmentDate: number,
   duration: number
 ): Promise<boolean> {
+  if (!staffProfileId) return true; // If no staff assigned, assume available/relaxed
+
   const appointmentDateTime = new Date(appointmentDate);
   const dayOfWeek = appointmentDateTime.toLocaleDateString('en-US', { weekday: 'long' }) as 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
-  
+
   // Get both recurring slots for this day and specific date slots
   const recurringSlots = await ctx.db
     .query("availableTimes")
-    .withIndex("by_staffProfileId_dayOfWeek", (q: any) => 
+    .withIndex("by_staffProfileId_dayOfWeek", (q: any) =>
       q.eq("staffProfileId", staffProfileId).eq("dayOfWeek", dayOfWeek)
     )
     .filter((q: any) => q.eq(q.field("isRecurring"), true))
@@ -1004,7 +1016,7 @@ async function checkDoctorAvailability(
 
   const specificSlots = await ctx.db
     .query("availableTimes")
-    .withIndex("by_staffProfileId_date", (q: any) => 
+    .withIndex("by_staffProfileId_date", (q: any) =>
       q.eq("staffProfileId", staffProfileId).eq("date", appointmentDate)
     )
     .collect();
@@ -1035,8 +1047,8 @@ async function checkDoctorAvailability(
         return true;
       }
       // Check if appointment spans midnight (starts before midnight, ends after)
-      if (appointmentTime >= slotStartTime && appointmentTime < 24 * 60 && 
-          appointmentEndTime > 24 * 60 && (appointmentEndTime - 24 * 60) <= slotEndTime) {
+      if (appointmentTime >= slotStartTime && appointmentTime < 24 * 60 &&
+        appointmentEndTime > 24 * 60 && (appointmentEndTime - 24 * 60) <= slotEndTime) {
         return true;
       }
     } else {
@@ -1055,19 +1067,21 @@ async function checkDoctorAvailability(
  */
 async function checkAppointmentConflict(
   ctx: any,
-  staffProfileId: Id<"staff_profiles">,
+  staffProfileId: Id<"staff_profiles"> | undefined,
   appointmentDate: number,
   duration: number,
   excludeAppointmentId?: Id<"appointments">
 ): Promise<boolean> {
+  if (!staffProfileId) return false; // If no staff assigned, no conflict
+
   const appointmentEndTime = appointmentDate + (duration * 60 * 1000);
 
   const existingAppointments = await ctx.db
     .query("appointments")
-    .withIndex("by_staffProfileId_appointmentDate", (q: any) => 
+    .withIndex("by_staffProfileId_appointmentDate", (q: any) =>
       q.eq("staffProfileId", staffProfileId)
     )
-    .filter((q: any) => 
+    .filter((q: any) =>
       q.and(
         q.neq(q.field("status"), "cancelled"),
         q.neq(q.field("status"), "completed"),
@@ -1118,11 +1132,11 @@ export const getDoctorAvailableSlots = query({
   handler: async (ctx, args) => {
     const appointmentDate = new Date(args.date);
     const dayOfWeek = appointmentDate.toLocaleDateString('en-US', { weekday: 'long' }) as 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
-    
+
     // Get recurring slots for this day of week
     const recurringSlots = await ctx.db
       .query("availableTimes")
-      .withIndex("by_staffProfileId_dayOfWeek", (q) => 
+      .withIndex("by_staffProfileId_dayOfWeek", (q) =>
         q.eq("staffProfileId", args.staffProfileId).eq("dayOfWeek", dayOfWeek)
       )
       .filter((q: any) => q.eq(q.field("isRecurring"), true))
@@ -1131,7 +1145,7 @@ export const getDoctorAvailableSlots = query({
     // Get specific date slots
     const specificSlots = await ctx.db
       .query("availableTimes")
-      .withIndex("by_staffProfileId_date", (q) => 
+      .withIndex("by_staffProfileId_date", (q) =>
         q.eq("staffProfileId", args.staffProfileId).eq("date", args.date)
       )
       .collect();
@@ -1204,11 +1218,11 @@ export const getDoctorAvailableSlotsWithConflicts = query({
     const duration = args.appointmentDuration || 30; // Default 30 minutes
     const appointmentDate = new Date(args.date);
     const dayOfWeek = appointmentDate.toLocaleDateString('en-US', { weekday: 'long' }) as 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
-    
+
     // Get all available time slots for this day
     const recurringSlots = await ctx.db
       .query("availableTimes")
-      .withIndex("by_staffProfileId_dayOfWeek", (q) => 
+      .withIndex("by_staffProfileId_dayOfWeek", (q) =>
         q.eq("staffProfileId", args.staffProfileId).eq("dayOfWeek", dayOfWeek)
       )
       .filter((q: any) => q.eq(q.field("isRecurring"), true))
@@ -1216,13 +1230,13 @@ export const getDoctorAvailableSlotsWithConflicts = query({
 
     const specificSlots = await ctx.db
       .query("availableTimes")
-      .withIndex("by_staffProfileId_date", (q) => 
+      .withIndex("by_staffProfileId_date", (q) =>
         q.eq("staffProfileId", args.staffProfileId).eq("date", args.date)
       )
       .collect();
 
     const allSlots = [...recurringSlots, ...specificSlots];
-    
+
     if (allSlots.length === 0) {
       return [];
     }
@@ -1238,7 +1252,7 @@ export const getDoctorAvailableSlotsWithConflicts = query({
     for (const slot of allSlots) {
       const slotStartMinutes = timeStringToMinutes(slot.startTime);
       let slotEndMinutes = timeStringToMinutes(slot.endTime);
-      
+
       // Handle overnight shifts
       if (slotEndMinutes <= slotStartMinutes) {
         slotEndMinutes += 24 * 60; // Add 24 hours for next day
@@ -1248,20 +1262,20 @@ export const getDoctorAvailableSlotsWithConflicts = query({
       for (let currentMinutes = slotStartMinutes; currentMinutes + duration <= slotEndMinutes; currentMinutes += duration) {
         const appointmentStartTime = minutesToTimeString(currentMinutes % (24 * 60));
         const appointmentEndTime = minutesToTimeString((currentMinutes + duration) % (24 * 60));
-        
+
         // Create timestamp for this specific appointment slot
         const appointmentDateTime = new Date(args.date);
         const [hours, minutes] = appointmentStartTime.split(':').map(Number);
         appointmentDateTime.setHours(hours, minutes, 0, 0);
-        
+
         // Check if this specific slot is available
         const isDoctorAvailable = await checkDoctorAvailability(ctx, args.staffProfileId, appointmentDateTime.getTime(), duration);
         const hasConflict = await checkAppointmentConflict(ctx, args.staffProfileId, appointmentDateTime.getTime(), duration);
-        
+
         const slotAvailability = {
           isAvailable: isDoctorAvailable && !hasConflict,
-          reason: !isDoctorAvailable ? "Doctor is not available at this time" : 
-                  hasConflict ? "Time slot conflicts with existing appointment" : undefined,
+          reason: !isDoctorAvailable ? "Doctor is not available at this time" :
+            hasConflict ? "Time slot conflicts with existing appointment" : undefined,
         };
 
         availableSlots.push({
@@ -1282,7 +1296,7 @@ export const getDoctorAvailableSlotsWithConflicts = query({
       return acc;
     }, [] as typeof availableSlots);
 
-    return uniqueSlots.sort((a, b) => 
+    return uniqueSlots.sort((a, b) =>
       timeStringToMinutes(a.startTime) - timeStringToMinutes(b.startTime)
     );
   },
@@ -1318,11 +1332,11 @@ export const getAvailableAppointmentSlots = query({
     const duration = args.appointmentDuration || 30;
     const appointmentDate = new Date(args.date);
     const dayOfWeek = appointmentDate.toLocaleDateString('en-US', { weekday: 'long' }) as 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
-    
+
     // Get all available time slots for this day
     const recurringSlots = await ctx.db
       .query("availableTimes")
-      .withIndex("by_staffProfileId_dayOfWeek", (q) => 
+      .withIndex("by_staffProfileId_dayOfWeek", (q) =>
         q.eq("staffProfileId", args.staffProfileId).eq("dayOfWeek", dayOfWeek)
       )
       .filter((q: any) => q.eq(q.field("isRecurring"), true))
@@ -1330,13 +1344,13 @@ export const getAvailableAppointmentSlots = query({
 
     const specificSlots = await ctx.db
       .query("availableTimes")
-      .withIndex("by_staffProfileId_date", (q) => 
+      .withIndex("by_staffProfileId_date", (q) =>
         q.eq("staffProfileId", args.staffProfileId).eq("date", args.date)
       )
       .collect();
 
     const allSlots = [...recurringSlots, ...specificSlots];
-    
+
     if (allSlots.length === 0) {
       return [];
     }
@@ -1352,7 +1366,7 @@ export const getAvailableAppointmentSlots = query({
     for (const slot of allSlots) {
       const slotStartMinutes = timeStringToMinutes(slot.startTime);
       let slotEndMinutes = timeStringToMinutes(slot.endTime);
-      
+
       // Handle overnight shifts
       if (slotEndMinutes <= slotStartMinutes) {
         slotEndMinutes += 24 * 60;
@@ -1362,16 +1376,16 @@ export const getAvailableAppointmentSlots = query({
       for (let currentMinutes = slotStartMinutes; currentMinutes + duration <= slotEndMinutes; currentMinutes += 30) { // 30-minute intervals
         const appointmentStartTime = minutesToTimeString(currentMinutes % (24 * 60));
         const appointmentEndTime = minutesToTimeString((currentMinutes + duration) % (24 * 60));
-        
+
         // Create timestamp for this specific appointment slot
         const slotDateTime = new Date(args.date);
         const [hours, minutes] = appointmentStartTime.split(':').map(Number);
         slotDateTime.setHours(hours, minutes, 0, 0);
-        
+
         // Check if this specific slot is available
         const isDoctorAvailable = await checkDoctorAvailability(ctx, args.staffProfileId, slotDateTime.getTime(), duration);
         const hasConflict = await checkAppointmentConflict(ctx, args.staffProfileId, slotDateTime.getTime(), duration);
-        
+
         if (isDoctorAvailable && !hasConflict) {
           availableSlots.push({
             startTime: appointmentStartTime,
@@ -1392,7 +1406,7 @@ export const getAvailableAppointmentSlots = query({
       return acc;
     }, [] as typeof availableSlots);
 
-    const slotsWithConflicts = uniqueSlots.sort((a, b) => 
+    const slotsWithConflicts = uniqueSlots.sort((a, b) =>
       timeStringToMinutes(a.startTime) - timeStringToMinutes(b.startTime)
     );
 
@@ -1445,9 +1459,9 @@ export const getClinicAvailableSlots = query({
     }
 
     // Generate all possible time slots for clinic hours (6 AM to 10 PM)
-    const clinicSlots: Map<string, { 
-      startTime: string; 
-      endTime: string; 
+    const clinicSlots: Map<string, {
+      startTime: string;
+      endTime: string;
       timestamp: number;
       availableDoctors: Set<string>;
     }> = new Map();
@@ -1460,10 +1474,10 @@ export const getClinicAvailableSlots = query({
         const endHour = hour + Math.floor(endMinute / 60);
         const endMin = endMinute % 60;
         const endTime = `${endHour.toString().padStart(2, '0')}:${endMin.toString().padStart(2, '0')}`;
-        
+
         const slotDateTime = new Date(args.date);
         slotDateTime.setHours(hour, minute, 0, 0);
-        
+
         clinicSlots.set(startTime, {
           startTime,
           endTime,
@@ -1497,16 +1511,16 @@ export const getClinicAvailableSlots = query({
       // Mark slots as available for this doctor
       for (const slot of allSlots) {
         if (!slot.isAvailable) continue;
-        
+
         const slotStartMinutes = timeStringToMinutes(slot.startTime);
         let slotEndMinutes = timeStringToMinutes(slot.endTime);
-        
+
         if (slotEndMinutes <= slotStartMinutes) {
           slotEndMinutes += 24 * 60;
         }
 
         // Check which clinic slots fall within this doctor's availability
-        for (const [key, clinicSlot] of clinicSlots) {
+        for (const clinicSlot of Array.from(clinicSlots.values())) {
           const clinicStartMinutes = timeStringToMinutes(clinicSlot.startTime);
           const clinicEndMinutes = clinicStartMinutes + duration;
 
@@ -1584,7 +1598,7 @@ export const createAppointmentWithAutoAssign = mutation({
   }),
   handler: async (ctx, args) => {
     const duration = args.duration || 30;
-    
+
     // Verify patient exists
     const patient = await ctx.db.get(args.patientId);
     if (!patient) {
@@ -1603,7 +1617,7 @@ export const createAppointmentWithAutoAssign = mutation({
       if (preferredProfile && ["doctor", "nurse", "allied_health"].includes(preferredProfile.role)) {
         const isAvailable = await checkDoctorAvailability(ctx, args.preferredStaffProfileId, args.appointmentDate, duration);
         const hasConflict = await checkAppointmentConflict(ctx, args.preferredStaffProfileId, args.appointmentDate, duration);
-        
+
         if (isAvailable && !hasConflict) {
           assignedStaffProfile = preferredProfile;
         }
@@ -1632,7 +1646,7 @@ export const createAppointmentWithAutoAssign = mutation({
       for (const profile of sortedProfiles) {
         const isAvailable = await checkDoctorAvailability(ctx, profile._id, args.appointmentDate, duration);
         const hasConflict = await checkAppointmentConflict(ctx, profile._id, args.appointmentDate, duration);
-        
+
         if (isAvailable && !hasConflict) {
           assignedStaffProfile = profile;
           break;
@@ -1731,8 +1745,8 @@ export const reassignAppointment = mutation({
     // Update the appointment
     await ctx.db.patch(args.appointmentId, {
       staffProfileId: args.newStaffProfileId,
-      notes: args.reason 
-        ? `${appointment.notes || ""}\nReassigned: ${args.reason}` 
+      notes: args.reason
+        ? `${appointment.notes || ""}\nReassigned: ${args.reason}`
         : appointment.notes,
       updatedAt: Date.now(),
     });
@@ -1752,24 +1766,24 @@ export const createSampleAvailableTimesForAllDoctors = mutation({
   handler: async (ctx, args) => {
     const results = [];
     const staffProfiles = await ctx.db.query("staff_profiles").collect();
-    
+
     for (const staffProfile of staffProfiles) {
       const user = await ctx.db.get(staffProfile.userId);
       if (!user) continue;
-      
+
       // Check if this doctor already has available times
       const existingTimes = await ctx.db
         .query("availableTimes")
         .withIndex("by_staffProfileId", (q) => q.eq("staffProfileId", staffProfile._id))
         .collect();
-      
+
       if (existingTimes.length > 0) {
         continue; // Skip if already has availability set
       }
-      
+
       const createdSlots: Id<"availableTimes">[] = [];
       const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
-      
+
       for (const day of weekdays) {
         // Morning shift: 6 AM - 12 PM
         const morningSlot = await ctx.db.insert("availableTimes", {
@@ -1782,7 +1796,7 @@ export const createSampleAvailableTimesForAllDoctors = mutation({
           createdAt: Date.now(),
         });
         createdSlots.push(morningSlot);
-        
+
         // Afternoon shift: 12 PM - 6 PM
         const afternoonSlot = await ctx.db.insert("availableTimes", {
           staffProfileId: staffProfile._id,
@@ -1794,7 +1808,7 @@ export const createSampleAvailableTimesForAllDoctors = mutation({
           createdAt: Date.now(),
         });
         createdSlots.push(afternoonSlot);
-        
+
         // Evening shift: 6 PM - 12 AM (midnight)
         const eveningSlot = await ctx.db.insert("availableTimes", {
           staffProfileId: staffProfile._id,
@@ -1807,14 +1821,14 @@ export const createSampleAvailableTimesForAllDoctors = mutation({
         });
         createdSlots.push(eveningSlot);
       }
-      
+
       results.push({
         staffProfileId: staffProfile._id,
         doctorName: `Dr. ${user.firstName} ${user.lastName}`,
         createdSlots,
       });
     }
-    
+
     return results;
   },
 });
@@ -1974,8 +1988,8 @@ export const getAllAppointmentsForAdmin = query({
     const enrichedAppointments = await Promise.all(
       appointments.map(async (appointment) => {
         const patient = await ctx.db.get(appointment.patientId);
-        const staffProfile = await ctx.db.get(appointment.staffProfileId);
-        
+        const staffProfile = appointment.staffProfileId ? await ctx.db.get(appointment.staffProfileId) : null;
+
         if (!patient || !staffProfile) {
           return null;
         }
@@ -2081,7 +2095,9 @@ export const getAppointmentStatsForAdmin = query({
     const staffCounts: Record<string, number> = {};
     for (const appointment of appointments) {
       const key = appointment.staffProfileId;
-      staffCounts[key] = (staffCounts[key] || 0) + 1;
+      if (key) {
+        staffCounts[key] = (staffCounts[key] || 0) + 1;
+      }
     }
 
     // Get staff names

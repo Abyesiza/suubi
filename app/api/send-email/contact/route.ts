@@ -8,19 +8,20 @@ export async function POST(req: Request) {
     const { name, email, phone, subject, message } = await req.json();
 
     // Validate required environment variables
-    if (!process.env.EMAIL || !process.env.EMAIL_PASSWORD) {
-      console.error('Missing required environment variables: EMAIL or EMAIL_PASSWORD');
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Email service not configured' 
+    // We allow missing EMAIL env if we have a hardcoded fallback, but password is required for SMTP
+    if (!process.env.EMAIL_PASSWORD) {
+      console.error('Missing required environment variables: EMAIL_PASSWORD');
+      return NextResponse.json({
+        success: false,
+        error: 'Email service not configured'
       }, { status: 500 });
     }
 
     // Validate required parameters
     if (!name || !email || !subject || !message) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Missing required fields: name, email, subject, or message' 
+      return NextResponse.json({
+        success: false,
+        error: 'Missing required fields: name, email, subject, or message'
       }, { status: 400 });
     }
 
@@ -31,9 +32,9 @@ export async function POST(req: Request) {
       console.log('SMTP server is ready for contact form emails');
     } catch (verifyError) {
       console.error('SMTP verification failed:', verifyError);
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Email service connection failed' 
+      return NextResponse.json({
+        success: false,
+        error: 'Email service connection failed'
       }, { status: 500 });
     }
 
@@ -90,7 +91,7 @@ export async function POST(req: Request) {
 
     // Send both emails
     await sendBrandedEmail({
-      to: process.env.EMAIL as string,
+      to: process.env.EMAIL || 'suubimedcarekayunga@gmail.com',
       subject: `New Contact Form Submission: ${subject}`,
       html: orgMailHtml,
       text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone || 'Not provided'}\nSubject: ${subject}\nMessage: ${message}`,
@@ -106,13 +107,13 @@ export async function POST(req: Request) {
       text: `Dear ${name}, Thank you for reaching out to Suubi Medical Centre. We have received your message and will get back to you within 24-48 hours. Your message: "${subject}"`,
     });
     console.log(`Contact form confirmation sent to ${email}`);
-    
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error sending contact form emails:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to send email.' 
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send email.'
     }, { status: 500 });
   }
 }

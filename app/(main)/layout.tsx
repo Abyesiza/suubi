@@ -1,7 +1,6 @@
-import Navbar from '@/components/Navbar'
-import Footer from '@/components/Footer'
-import ChatBubble from '@/components/ChatBubble'
-import Lifeline from '@/components/ui/Lifeline'
+import { Navbar } from '@/components/marketing/Navbar';
+import { Footer } from '@/components/marketing/Footer';
+import ChatBubble from '@/components/ChatBubble';
 
 export default function MainLayout({
   children,
@@ -9,18 +8,14 @@ export default function MainLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="relative min-h-screen pt-0">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      <main className="relative z-20 animate-fade-in">
+      <main className="flex-grow animate-fade-in pt-0">
         {children}
       </main>
 
       <Footer />
-
-      <div className="absolute bottom-0 left-0 right-0 w-full z-10">
-        <Lifeline color="#FF9933" height="30px" variant="thin" className="opacity-60 transform rotate-180" />
-      </div>
 
       <ChatBubble />
     </div>

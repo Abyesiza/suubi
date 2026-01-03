@@ -22,16 +22,39 @@ export const listStaffProfiles = query({
   },
 });
 
+export const getPublicProfile = query({
+  args: { id: v.id("staff_profiles") },
+  handler: async (ctx, args) => {
+    const profile = await ctx.db.get(args.id);
+    if (!profile) return null;
+
+    // Get user info for name/image
+    const user = await ctx.db.get(profile.userId);
+    if (!user) return null;
+
+    return {
+      ...profile,
+      user: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        imageUrl: user.imageUrl,
+      }
+    };
+  },
+});
+
 export const listStaffProfilesByRole = query({
-  args: { role: v.union(
-    v.literal("doctor"),
-    v.literal("nurse"),
-    v.literal("allied_health"),
-    v.literal("support_staff"),
-    v.literal("administrative_staff"),
-    v.literal("technical_staff"),
-    v.literal("training_research_staff")
-  ) },
+  args: {
+    role: v.union(
+      v.literal("doctor"),
+      v.literal("nurse"),
+      v.literal("allied_health"),
+      v.literal("support_staff"),
+      v.literal("administrative_staff"),
+      v.literal("technical_staff"),
+      v.literal("training_research_staff")
+    )
+  },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("staff_profiles")
@@ -78,7 +101,7 @@ export const updateStaffProfile = mutation({
       .query("staff_profiles")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
       .unique();
-    
+
     if (!profile) {
       throw new Error("Staff profile not found");
     }
@@ -103,15 +126,17 @@ export const updateStaffProfile = mutation({
 
 // Helper function to get available sub-roles for each main role
 export const getAvailableSubRoles = query({
-  args: { role: v.union(
-    v.literal("doctor"),
-    v.literal("nurse"),
-    v.literal("allied_health"),
-    v.literal("support_staff"),
-    v.literal("administrative_staff"),
-    v.literal("technical_staff"),
-    v.literal("training_research_staff")
-  ) },
+  args: {
+    role: v.union(
+      v.literal("doctor"),
+      v.literal("nurse"),
+      v.literal("allied_health"),
+      v.literal("support_staff"),
+      v.literal("administrative_staff"),
+      v.literal("technical_staff"),
+      v.literal("training_research_staff")
+    )
+  },
   handler: async (ctx, args) => {
     const subRoles: Record<string, string[]> = {
       doctor: [
@@ -205,7 +230,7 @@ export const hasCompletedProfile = query({
       .query("staff_profiles")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
       .unique();
-    
+
     return !!profile; // Returns true if profile exists, false otherwise
   },
 });
@@ -308,7 +333,7 @@ export const listStaffWithUsers = query({
   handler: async (ctx, args) => {
     // Base query: filter staff_profiles by role if provided
     let profiles;
-    
+
     if (args.role) {
       // Use index to filter by role
       profiles = await ctx.db
@@ -467,8 +492,8 @@ export const getStaffAppointments = query({
       const endOfDay = new Date(args.date);
       endOfDay.setHours(23, 59, 59, 999);
 
-      appointments = appointments.filter(appointment => 
-        appointment.appointmentDate >= startOfDay.getTime() && 
+      appointments = appointments.filter(appointment =>
+        appointment.appointmentDate >= startOfDay.getTime() &&
         appointment.appointmentDate <= endOfDay.getTime()
       );
     }
@@ -604,10 +629,10 @@ export const getUpcomingStaffAppointments = query({
 
     const appointments = await ctx.db
       .query("appointments")
-      .withIndex("by_staffProfileId_appointmentDate", (q) => 
+      .withIndex("by_staffProfileId_appointmentDate", (q) =>
         q.eq("staffProfileId", staffProfile._id)
       )
-      .filter((q: any) => 
+      .filter((q: any) =>
         q.and(
           q.gte(q.field("appointmentDate"), now),
           q.lte(q.field("appointmentDate"), futureDate),
@@ -782,7 +807,7 @@ export const requestReschedule = mutation({
 
     // Add reschedule request to notes
     const rescheduleNote = `Reschedule requested by staff. Suggested date: ${new Date(args.suggestedDate).toLocaleString()}. Reason: ${args.reason || "No reason provided"}`;
-    
+
     await ctx.db.patch(args.appointmentId, {
       notes: `${appointment.notes || ""}\n${rescheduleNote}`,
       updatedAt: Date.now(),
@@ -1212,21 +1237,21 @@ export const getAvailableNurses = query({
 
     // Apply filters
     let filteredProfiles = nurseProfiles;
-    
+
     if (args.subRole) {
-      filteredProfiles = filteredProfiles.filter(profile => 
+      filteredProfiles = filteredProfiles.filter(profile =>
         profile.subRole === args.subRole
       );
     }
-    
+
     if (args.isAvailable !== undefined) {
-      filteredProfiles = filteredProfiles.filter(profile => 
+      filteredProfiles = filteredProfiles.filter(profile =>
         profile.isAvailable === args.isAvailable
       );
     }
-    
+
     if (args.verified !== undefined) {
-      filteredProfiles = filteredProfiles.filter(profile => 
+      filteredProfiles = filteredProfiles.filter(profile =>
         profile.verified === args.verified
       );
     }
@@ -1318,20 +1343,20 @@ export const getSpecialistsBySpecialty = query({
   handler: async (ctx, args) => {
     // Get all staff profiles with the specified specialty
     const allProfiles = await ctx.db.query("staff_profiles").collect();
-    
-    let specialistProfiles = allProfiles.filter(profile => 
+
+    let specialistProfiles = allProfiles.filter(profile =>
       profile.specialty?.toLowerCase().includes(args.specialty.toLowerCase())
     );
 
     // Apply additional filters
     if (args.isAvailable !== undefined) {
-      specialistProfiles = specialistProfiles.filter(profile => 
+      specialistProfiles = specialistProfiles.filter(profile =>
         profile.isAvailable === args.isAvailable
       );
     }
-    
+
     if (args.verified !== undefined) {
-      specialistProfiles = specialistProfiles.filter(profile => 
+      specialistProfiles = specialistProfiles.filter(profile =>
         profile.verified === args.verified
       );
     }

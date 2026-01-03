@@ -172,20 +172,16 @@ export default function DonatePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
       {/* Hero Section */}
-      <section className="relative pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-orange/5 via-transparent to-brand-teal/5" />
-        <div className="absolute top-20 right-10 w-72 h-72 bg-brand-orange/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 left-10 w-96 h-96 bg-brand-teal/10 rounded-full blur-3xl" />
-
-        <div className="container-custom relative z-10">
+      <section className="bg-brand-navy pt-32 pb-32 text-white relative overflow-hidden">
+        <div className="container-custom relative z-10 text-center">
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="text-center max-w-4xl mx-auto"
+            className="max-w-4xl mx-auto"
           >
             <motion.div variants={itemVariants}>
-              <Badge className="mb-4 bg-brand-orange/10 text-brand-orange hover:bg-brand-orange/20">
+              <Badge className="mb-4 bg-white/10 text-white hover:bg-white/20">
                 <Heart className="w-3 h-3 mr-1" />
                 Support Our Mission
               </Badge>
@@ -193,17 +189,14 @@ export default function DonatePage() {
 
             <motion.h1
               variants={itemVariants}
-              className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6"
+              className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 font-heading"
             >
-              Your Donation{' '}
-              <span className="bg-gradient-to-r from-brand-orange to-brand-amber bg-clip-text text-transparent">
-                Saves Lives
-              </span>
+              Your Donation Saves Lives
             </motion.h1>
 
             <motion.p
               variants={itemVariants}
-              className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-3xl mx-auto"
+              className="text-lg sm:text-xl text-gray-300 mb-8 max-w-3xl mx-auto"
             >
               Your donation provides essential medical care to patients in underserved communities.
               Every contribution makes a meaningful difference in someone's life.
@@ -219,7 +212,7 @@ export default function DonatePage() {
                   Donate Now
                 </a>
               </Button>
-              <Button variant="outline" size="lg" asChild>
+              <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10" asChild>
                 <Link href="/register-patient">
                   <Users className="mr-2 h-4 w-4" />
                   Register a Patient
@@ -227,6 +220,14 @@ export default function DonatePage() {
               </Button>
             </motion.div>
           </motion.div>
+        </div>
+        {/* Background decorative elements */}
+        <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white/5 to-transparent pointer-events-none" />
+        <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none translate-y-1/4 translate-x-1/4">
+          <Heart className="w-[500px] h-[500px] text-white" />
+        </div>
+        <div className="absolute left-10 top-20 opacity-5 pointer-events-none">
+          <Gift className="w-32 h-32 text-white" />
         </div>
       </section>
 
@@ -283,11 +284,10 @@ export default function DonatePage() {
             {patients.map((patient, index) => (
               <motion.div key={patient.id} variants={itemVariants}>
                 <Card
-                  className={`h-full overflow-hidden cursor-pointer transition-all ${
-                    selectedPatient === patient.id
+                  className={`h-full overflow-hidden cursor-pointer transition-all ${selectedPatient === patient.id
                       ? 'ring-2 ring-brand-orange shadow-lg'
                       : 'hover:shadow-lg'
-                  }`}
+                    }`}
                   onClick={() => handlePatientSelect(patient.id)}
                 >
                   <div className="relative h-52">
