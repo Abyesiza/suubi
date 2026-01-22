@@ -7,6 +7,42 @@ import { Id } from "./_generated/dataModel";
 
 export const getStaffProfileByUserId = query({
   args: { userId: v.id("users") },
+  returns: v.union(
+    v.object({
+      _id: v.id("staff_profiles"),
+      _creationTime: v.number(),
+      userId: v.id("users"),
+      role: v.union(
+        v.literal("admin"),
+        v.literal("doctor"),
+        v.literal("nurse"),
+        v.literal("allied_health"),
+        v.literal("support_staff"),
+        v.literal("administrative_staff"),
+        v.literal("technical_staff"),
+        v.literal("training_research_staff"),
+        v.literal("superadmin"),
+        v.literal("editor")
+      ),
+      subRole: v.optional(v.string()),
+      specialty: v.optional(v.string()),
+      licenseNumber: v.optional(v.string()),
+      qualifications: v.optional(v.array(v.string())),
+      experience: v.optional(v.number()),
+      bio: v.optional(v.string()),
+      languages: v.optional(v.array(v.string())),
+      consultationFee: v.optional(v.number()),
+      isAvailable: v.optional(v.boolean()),
+      rating: v.optional(v.number()),
+      totalReviews: v.optional(v.number()),
+      profileImage: v.optional(v.string()),
+      verified: v.boolean(),
+      verifiedById: v.optional(v.id("users")),
+      createdAt: v.number(),
+      updatedAt: v.optional(v.number()),
+    }),
+    v.null()
+  ),
   handler: async (ctx, args) => {
     return await ctx.db
       .query("staff_profiles")

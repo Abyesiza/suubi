@@ -84,6 +84,8 @@ export function Sidebar({ role }: SidebarProps) {
       ? "Staff Portal"
       : "Patient Portal";
 
+  const rootRoutes = new Set<string>(["/admin", "/staff-portal", "/patient"]);
+
   return (
     <motion.aside
       initial={false}
@@ -138,7 +140,10 @@ export function Sidebar({ role }: SidebarProps) {
       <ScrollArea className="flex-1 px-3 py-4">
         <nav className="flex flex-col gap-1">
           {navItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            const isRoot = rootRoutes.has(item.href);
+            const isActive = isRoot
+              ? pathname === item.href
+              : pathname === item.href || pathname.startsWith(item.href + "/");
             return (
               <Link key={item.href} href={item.href}>
                 <motion.div
@@ -150,6 +155,7 @@ export function Sidebar({ role }: SidebarProps) {
                       ? "bg-white/20 text-white shadow-sm"
                       : "text-white/70 hover:bg-white/10 hover:text-white"
                   )}
+                  aria-current={isActive ? "page" : undefined}
                 >
                   <item.icon className={cn("h-5 w-5 shrink-0", isActive && "text-brand-teal")} />
                   <AnimatePresence mode="wait">

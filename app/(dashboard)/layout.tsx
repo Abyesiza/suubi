@@ -51,7 +51,7 @@ export default function DashboardLayout({
 
   // Check if user has access to current section
   useEffect(() => {
-    if (!isUserLoaded || currentUser === undefined) return;
+    if (!isUserLoaded || currentUser === undefined || staffProfile === undefined) return;
 
     // If no user, redirect to sign-in
     if (!user || !currentUser) {
@@ -59,25 +59,34 @@ export default function DashboardLayout({
       return;
     }
 
+    // Allow initial admin bootstrap route without redirect loops
+    if (pathname.startsWith("/admin/setup")) {
+      return;
+    }
+
     // Redirect based on role if accessing wrong dashboard
     const expectedSection = rolePathMap[role];
-    if (currentSection !== expectedSection) {
-      // Allow admin to access any dashboard
-      if (role === "admin") return;
+    
+    // Only redirect if user is on the wrong dashboard for their role
+    // Admin can access any dashboard, so skip redirects for admins
+    if (role === "admin") {
+      return; // Admins can go anywhere
+    }
 
-      // Redirect staff trying to access admin
-      if (currentSection === "admin" && role === "staff") {
+    if (currentSection !== expectedSection) {
+      // Redirect staff trying to access admin or patient portals
+      if (role === "staff" && (currentSection === "admin" || currentSection === "patient")) {
         router.push("/staff-portal");
         return;
       }
 
       // Redirect patients trying to access admin or staff portal
-      if ((currentSection === "admin" || currentSection === "staff-portal") && role === "patient") {
+      if (role === "patient" && (currentSection === "admin" || currentSection === "staff-portal")) {
         router.push("/patient");
         return;
       }
     }
-  }, [isUserLoaded, user, currentUser, staffProfile, currentSection, role, router]);
+  }, [isUserLoaded, user, currentUser, staffProfile, currentSection, role, router, rolePathMap, pathname]);
 
   // Loading state
   if (!isUserLoaded || currentUser === undefined) {
@@ -102,7 +111,7 @@ export default function DashboardLayout({
 
       {/* Mobile Sidebar */}
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-        <SheetContent side="left" className="w-[280px] p-0">
+        <SheetContent side="left" className="w-[280px] p-0 bg-brand-navy border-r-0">
           <Sidebar role={role} />
         </SheetContent>
       </Sheet>
@@ -110,7 +119,7 @@ export default function DashboardLayout({
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header role={role} onMobileMenuToggle={() => setIsMobileMenuOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-gray-50">
           {children}
         </main>
       </div>

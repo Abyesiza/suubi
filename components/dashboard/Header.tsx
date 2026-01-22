@@ -58,6 +58,19 @@ export function Header({ role, onMobileMenuToggle }: HeaderProps) {
     }
   };
 
+  const getSettingsLink = () => {
+    switch (role) {
+      case "admin":
+        return "/admin/settings";
+      case "staff":
+        return "/staff-portal/settings";
+      case "patient":
+        return "/patient/settings";
+      default:
+        return "/";
+    }
+  };
+
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-gray-100 bg-white px-4 md:px-6 shadow-sm">
       {/* Mobile Menu Toggle */}
@@ -160,7 +173,7 @@ export function Header({ role, onMobileMenuToggle }: HeaderProps) {
               <Link href={getProfileLink()} className="cursor-pointer">Profile</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href={`/${role === "staff" ? "staff-portal" : role}/settings`} className="cursor-pointer">Settings</Link>
+              <Link href={getSettingsLink()} className="cursor-pointer">Settings</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>

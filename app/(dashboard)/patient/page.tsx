@@ -94,7 +94,7 @@ export default function PatientDashboardPage() {
       {/* Stats Grid */}
       <motion.div
         variants={itemVariants}
-        className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+        className="grid gap-3 grid-cols-2 md:gap-4 lg:grid-cols-4"
       >
         <StatsCard
           title="Upcoming Appointments"

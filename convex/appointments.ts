@@ -771,6 +771,46 @@ export const cancelAppointment = mutation({
 });
 
 /**
+ * Cancel an appointment by patient (with permission check)
+ */
+export const cancelAppointmentByPatient = mutation({
+  args: {
+    appointmentId: v.id("appointments"),
+    patientId: v.id("users"),
+    cancellationReason: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const appointment = await ctx.db.get(args.appointmentId);
+    if (!appointment) {
+      throw new Error("Appointment not found");
+    }
+
+    // Verify the patient owns this appointment
+    if (appointment.patientId !== args.patientId) {
+      throw new Error("Unauthorized: You can only cancel your own appointments");
+    }
+
+    if (appointment.status === "cancelled") {
+      throw new Error("Appointment is already cancelled");
+    }
+
+    if (appointment.status === "completed") {
+      throw new Error("Cannot cancel completed appointment");
+    }
+
+    await ctx.db.patch(args.appointmentId, {
+      status: "cancelled",
+      cancelledById: args.patientId,
+      cancellationReason: args.cancellationReason || "Cancelled by patient",
+      updatedAt: Date.now(),
+    });
+
+    return null;
+  },
+});
+
+/**
  * Reschedule an appointment
  */
 export const rescheduleAppointment = mutation({
