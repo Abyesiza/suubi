@@ -404,7 +404,9 @@ export default function AdminStaffManagementPage() {
                       </h3>
                       <p className="text-sm text-gray-500 truncate">{member.user.email}</p>
                       <div className="flex flex-wrap gap-2 mt-2">
-                        <Badge className={getRoleBadgeColor(member.staffProfile.role)} className="text-xs">
+                        <Badge
+                          className={`${getRoleBadgeColor(member.staffProfile.role)} text-xs`}
+                        >
                           {member.staffProfile.role.replace("_", " ")}
                         </Badge>
                         <Badge variant={member.staffProfile.verified ? "default" : "secondary"} className="text-xs">

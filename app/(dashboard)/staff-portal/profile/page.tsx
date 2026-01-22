@@ -76,6 +76,22 @@ export default function StaffProfilePage() {
     );
   }
 
+  // If user is not staff, they shouldn't be here (or their profile hasn't been created yet)
+  if (!staffProfile) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Card className="max-w-xl w-full shadow-sm border-gray-200">
+          <CardHeader>
+            <CardTitle>Staff profile not found</CardTitle>
+            <CardDescription>
+              Your account does not have a staff profile yet. Please contact an admin to set up your staff access.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
   // Initialize form data when staffProfile is loaded
   useEffect(() => {
     if (staffProfile) {
